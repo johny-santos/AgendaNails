@@ -5,14 +5,20 @@ import { Image, Platform, StatusBar, StyleSheet, Text, View, TouchableOpacity } 
 interface HeaderProps {
   title?: string; //Conteúdo do Header;
   showAddButton?: boolean; //Controla se o Botão aparece ou não;
+  actionLabel?: string; //Rótulo do botão de ação;
   onAddPress?: () => void; // Função de baixo acoplamento que dispara ao botão ser clicado;
+  onActionPress?: () => void; // Função de ação customizada;
 }
 
 export function Header({ 
   title = 'AgendaNails',
-  showAddButton = false, 
-  onAddPress, 
+  showAddButton = false,
+  actionLabel = '+',
+  onAddPress,
+  onActionPress,
 }: HeaderProps) {
+  
+  const handlePress = onActionPress || onAddPress;
   
   return (
     <View style={styles.container}>
@@ -21,10 +27,10 @@ export function Header({
       {showAddButton && ( // Se a condição do ShowAddButton for verdadeira aparece o botão:
         <TouchableOpacity 
           style={styles.plusDiv}
-          onPress={onAddPress}
+          onPress={handlePress}
           activeOpacity={0.7}
         >
-          <Text style={styles.plus}>+</Text>
+          <Text style={styles.plus}>{actionLabel}</Text>
         </TouchableOpacity>
         )}
       
