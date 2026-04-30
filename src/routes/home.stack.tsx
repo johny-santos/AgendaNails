@@ -1,9 +1,19 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import Home from '../screens/Home';
 import NewClient from '../screens/newClient';
+import ClientDetails from '../screens/ClientDetails';
 import { Header } from '../components/Header';
 
-const Stack = createNativeStackNavigator();
+export type HomeStackParamList = {
+  HomeMain: undefined;
+  ClientDetails: {
+    name: string;
+    time: string;
+    service: string;
+  };
+};
+
+const Stack = createNativeStackNavigator<HomeStackParamList>();
 
 export function HomeStack() {
   return (
@@ -22,6 +32,11 @@ export function HomeStack() {
             />
           )
         }}
+      />
+
+      <Stack.Screen 
+        name="ClientDetails" 
+        component={ClientDetails}
       />
 
     </Stack.Navigator>
