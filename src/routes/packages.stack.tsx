@@ -25,8 +25,8 @@ export function PackagesStack() {
           <Header 
             title="Pacotes"
             showAddButton={true}
-            actionLabel="Novo Pacote"
-            onActionPress={() => navigation.navigate('NewPackage')}
+             actionLabel="Novo Pacote"
+            onActionPress={() => navigation.navigate('NewPackage')} 
           />
         ) 
       }}
@@ -37,7 +37,7 @@ export function PackagesStack() {
       component={Packages} 
     />
 
-    <Stack.Screen 
+     <Stack.Screen 
       name="NewPackage" 
       component={NewPackage} 
       options={{
@@ -45,7 +45,7 @@ export function PackagesStack() {
         <Header title="Novo Pacote" />
       )
     }}
-  />
+  /> 
 
     <Stack.Screen 
       name="PackageDetails" 
