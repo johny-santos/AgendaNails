@@ -1,137 +1,296 @@
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput} from 'react-native';
-import { StatusBar } from 'expo-status-bar';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TextInput,
+  TouchableOpacity,
+  Platform,
+  KeyboardAvoidingView
+} from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
-export default function NewClient(){
-    return(
-        <ScrollView style={styles.mainContainer}>
+import TimeDropdown from '../../components/TimeDropdown';
+import MultiSelectServices from '../../components/MultiSelectServices';
 
-            <View style={styles.labelTextContainer}>
-                <Text style={styles.labelsText}>Nome da Cliente*: </Text>
-            </View>
-            
-            <View style={styles.textInputContainer}>
-                <TextInput style={styles.inputText}></TextInput>
-            </View>
+export default function NewClient() {
+  const [clientName, setClientName] = useState<string>('');
+  const [clientPhone, setClientPhone] = useState<string>('');
+  const [description, setDescription] = useState<string>('');
 
-            <View style={styles.labelTextContainer}>
-                <Text style={styles.labelsText}>Horário inicial do atendimento:</Text>
-            </View>
-            
-            <View style={styles.textInputContainer}>
-                <TextInput style={styles.inputText}></TextInput>
-            </View>
-            {/*campo input do início atendimento*/}
-            <View style={styles.labelTextContainer}>
-                <Text style={styles.labelsText}>Horário Final do atendimento:</Text>
-            </View>
-            {/*campo input do final atendimento*/}
-            <View style={styles.textInputContainer}>
-                <TextInput style={styles.inputText}></TextInput>
-            </View>
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
 
-            <View style={styles.labelTextContainer}>
-                <Text style={styles.labelsText}>Tipo de atendimento: </Text>
-            </View>
-            
-            <View style={styles.textInputContainer}>
-                <TextInput style={styles.inputText}></TextInput>
-            </View>
+  const [startTime, setStartTime] = useState<string>('');
+  const [endTime, setEndTime] = useState<string>('');
 
-            
-            <View style={styles.labelTextContainer}>
-                <Text style={styles.labelsText}>Data do atendimento: </Text>
-            </View>
-            
-            <View style={styles.textInputContainer}>
-                <TextInput style={styles.inputText}></TextInput>
-            </View>
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
 
-            <View style={styles.labelTextContainer}>
-                <Text style={styles.labelsText}>Descrição: </Text>
-            </View>
+  const servicesList: string[] = [
+     'Manicure',
+     'Pedicure',
+     'Manicure + Pedicure',
+     'Blindagem',
+     'Banho de gel',
+     'Esmaltação em gel',
+     'Fibra de vidro',
+     'Unha de gel',
+     'Manutenção de fibra',
+     'Manutenção de gel',
+     'Spa dos pés',
+     'Cuticulagem',
+     'Alongamento',
+     'Remoção',
+    ];
 
-             <View style={styles.textDescricaoContainer}>
-                <TextInput style={styles.inputTextDescricao} multiline={true}></TextInput>
-            </View>
+  const generateStartTimes = (): string[] => {
+     const times: string[] = [];
 
-           
-            <TouchableOpacity style={styles.buttonToucha}>
-                <Text style={styles.userConfirm}>Agendar</Text> 
-            </TouchableOpacity>
-                        
-        </ScrollView>
-    )
+    for (let hour = 8; hour <= 19; hour++) {
+     times.push(`${hour.toString().padStart(2, '0')}:00`);
+    }
+
+    return times;
+    };
+
+  const generateEndTimes = (): string[] => {
+  const times: string[] = [];
+
+    for (let hour = 8; hour <= 19; hour++) {
+        for (let minute = 0; minute < 60; minute += 15) {
+            if (hour === 19 && minute > 0) break;
+
+        times.push(
+         `${hour.toString().padStart(2, '0')}:${minute
+         .toString()
+            .padStart(2, '0')}`
+        );
+     }
+    }
+
+    return times;
+  };
+
+  const onChangeDate = (event: any, selected?: Date): void => {
+    setShowDatePicker(false);
+
+    if (selected) {
+      setSelectedDate(selected);
+    }
+  };
+
+  const handleCreateAppointment = (): void => {
+    console.log({
+     clientName,
+     clientPhone,
+     selectedDate,
+     startTime,
+     endTime,
+     selectedServices,
+     description,
+    });
+
+ // Futuramente integrar com backend
+  };
+
+  return (
+
+   <KeyboardAvoidingView
+    style={{flex:1}} 
+    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+    <ScrollView style={styles.container}>
+     {/* HEADER */}
+     <View style={styles.header}>
+       <Text style={styles.headerTitle}>Novo Atendimento</Text>
+       <Text style={styles.headerSubtitle}>
+         Cadastre sua cliente de forma rápida
+       </Text>
+     </View>
+
+    {/* NOME */}
+    <View style={styles.labelContainer}>
+      <Text style={styles.label}>Nome da Cliente</Text>
+    </View>
+
+    <TextInput
+     style={styles.input}
+     placeholder="Digite o nome da cliente"
+     value={clientName}
+     onChangeText={setClientName}
+     />
+
+  {/* TELEFONE */}
+    <View style={styles.labelContainer}>
+      <Text style={styles.label}>Telefone</Text>
+    </View>
+
+    <TextInput
+     style={styles.input}
+     placeholder="(00) 00000-0000"
+     keyboardType="phone-pad"
+     value={clientPhone}
+     onChangeText={setClientPhone}
+    />
+
+  {/* DATA */}
+    <View style={styles.labelContainer}>
+      <Text style={styles.label}>Data do Atendimento</Text>
+    </View>
+
+    <TouchableOpacity
+     style={styles.input}
+     onPress={() => setShowDatePicker(true)}
+    >
+        <Text style={styles.dateText}>
+        {selectedDate.toLocaleDateString('pt-BR')}
+        </Text>
+    </TouchableOpacity>
+
+    {showDatePicker && (
+        <DateTimePicker
+            value={selectedDate}
+            mode="date"
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            onChange={onChangeDate}
+        />
+     )}
+
+  {/* HORÁRIOS */}
+    <TimeDropdown
+      label="Horário Inicial"
+      options={generateStartTimes()}
+      selectedValue={startTime}
+      onSelect={setStartTime}
+    />
+
+    <TimeDropdown
+      label="Horário Final"
+      options={generateEndTimes()}
+      selectedValue={endTime}
+      onSelect={setEndTime}
+    />
+  {/* SERVIÇOS */}
+    <MultiSelectServices
+      services={servicesList}
+      selectedServices={selectedServices}
+      onSelectionChange={setSelectedServices}
+    />
+
+ {/* OBSERVAÇÕES */}
+    <View style={styles.labelContainer}>
+      <Text style={styles.label}>Descrição / Observações</Text>
+    </View>
+
+   <TextInput
+     style={styles.descriptionInput}
+     placeholder="Digite observações importantes..."
+     multiline={true}
+     value={description}
+     onChangeText={setDescription}
+    />
+
+ {/* BOTÃO */}
+    <TouchableOpacity
+     style={styles.createButton}
+     onPress={handleCreateAppointment}
+    >
+      <Text style={styles.createButtonText}>Criar Atendimento</Text>
+     </TouchableOpacity>
+
+     <View style={{ height: 30 }} />
+    </ScrollView>
+   </KeyboardAvoidingView> 
+  );
 }
 
 const styles = StyleSheet.create({
-    mainContainer:{
-        flex: 1,
-        backgroundColor: '#fab4e3ff',
-    
-    },
-    labelTextContainer:{
-        marginTop: 10,
-        padding: 8,
-        marginLeft: 10
-    },
+  container: {
+    flex: 1,
+    backgroundColor: '#f8bbd0',
+  },
 
-    labelsText:{
-       fontSize: 17,
-       fontWeight: 'bold',
+  header: {
+    paddingTop: 60,
+    paddingBottom: 30,
+    paddingHorizontal: 20,
+    backgroundColor: '#d81b60',
+    borderBottomLeftRadius: 25,
+    borderBottomRightRadius: 25,
+  },
 
-    },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
 
-    textInputContainer:{
-        marginLeft: 12
-    },
+  headerSubtitle: {
+    color: '#fce4ec',
+    marginTop: 5,
+    fontSize: 15,
+  },
 
-    inputText:{
-        width: '95%',
-        backgroundColor: '#fff',
-        height: 60,
-        borderWidth: 4,
-        borderColor: 'purple',
-        borderRadius: 8,
-        boxShadow: '5px 7px 10px rgba(0, 0, 1, 0.3)',
-        paddingHorizontal: 8,
-    },
+  labelContainer: {
+    marginTop: 18,
+    paddingHorizontal: 16,
+  },
 
-    textDescricaoContainer:{
-        marginLeft: 12,
+  label: {
+    fontSize: 17,
+    fontWeight: 'bold',
+    color: '#6a006a',
+  },
 
-    },
+  input: {
+    width: '95%',
+    minHeight: 58,
+    backgroundColor: '#fff',
+    borderWidth: 3,
+    borderColor: '#d81b60',
+    borderRadius: 12,
+    alignSelf: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 14,
+    marginTop: 8,
+  },
 
-    inputTextDescricao:{
-        width: '95%',
-        backgroundColor: '#fff',
-        height: 105,
-        borderWidth: 4,
-        borderColor: 'purple',
-        borderRadius: 8,
-        boxShadow: '5px 7px 10px rgba(0, 0, 1, 0.3)',
-        paddingHorizontal: 8,
-        textAlignVertical: 'top',   
-    },
+  dateText: {
+    fontSize: 16,
+    color: '#333',
+  },
 
+  descriptionInput: {
+    width: '95%',
+    height: 120,
+    backgroundColor: '#fff',
+    borderWidth: 3,
+    borderColor: '#d81b60',
+    borderRadius: 12,
+    alignSelf: 'center',
+    paddingHorizontal: 14,
+    paddingTop: 12,
+    textAlignVertical: 'top',
+    marginTop: 8,
+  },
 
-    buttonToucha:{
-        width: '50%',
-        height: 60,
-        backgroundColor: 'purple',
-        padding: 14,
-        marginTop: 20,
-        display: 'flex',
-        alignSelf: 'center', 
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 4,
-        borderColor: 'rgb(194, 35, 141)'
-       
-    },
+  createButton: {
+    width: '60%',
+    height: 60,
+    backgroundColor: '#c2185b',
+    alignSelf: 'center',
+    marginTop: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#880e4f',
+  },
 
-    userConfirm:{
-        fontWeight: 'bold',
-        color: 'white',
-    }
-})
+  createButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 18,
+ },
+});

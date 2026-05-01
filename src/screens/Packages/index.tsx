@@ -1,141 +1,189 @@
-import { View, Text, StyleSheet, TouchableOpacity  } from 'react-native';
+import React from 'react';
+import {
+ View,
+ Text,
+ StyleSheet,
+ ScrollView,
+ TouchableOpacity,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { PackagesStackParamList } from '../../routes/packages.stack';
-import  ProgressSessions  from '../../components/ProgressSessions';
+import PackageCard from '../../components/PackageCard';
 
-type NavigationProps = NativeStackNavigationProp<PackagesStackParamList, 'PackagesMain'>;
+type NavigationProps = NativeStackNavigationProp<
+  PackagesStackParamList,
+  'PackagesMain'
+>;
 
 export default function Packages() {
   const navigation = useNavigation<NavigationProps>();
 
   return (
-   
-    <View style={styles.mainStyleView}>
-     
-        <View style={styles.titleMainView}>
-          <Text style={styles.innerTitleContent}>Pacotes em aberto:</Text>
-        </View>
+    <View style={styles.container}>
+     <ScrollView
+       contentContainerStyle={styles.scrollContainer}
+       showsVerticalScrollIndicator={false}
+     >
+       {/* Header */}
+       <View style={styles.header}>
+         <Text style={styles.greeting}>Pacotes</Text>
+          <Text style={styles.subtitle}>
+            Gerencie clientes com sessões recorrentes
+         </Text>
+      </View>
 
-      <TouchableOpacity
-        onPress={() => navigation.navigate('PackageDetails', {
-          name: 'Sabrina Sato',
-          time: '22/11/2025',
-          service: 'Manicure Premium',
-          observations: '2 sessões restantes'
-        })}
-      >
-        <View style={styles.motherStyleMainView}>
-          <View style={styles.rowElements}>
-            <View style={styles.columnElementsView}>
-              <Text style={styles.custumerName}>Sabrina Sato</Text>
-              <Text>
-                Início: {/* Conteúdo puxado do banco */} 
-                <Text style={{ fontWeight: 'bold', fontSize: 16 }}>22/11/2025</Text> 
-              </Text>
-            </View>
-
-            <View style={styles.restantApointPackNumber}>
-              <Text style={styles.innerPackageNumber}>2 sessões restant.</Text>
-            </View>
-          </View>
-            
-              <View
-                style={{
-                width: '97%',
-                borderBottomColor: '#cccccc',
-                borderBottomWidth: StyleSheet.hairlineWidth, // Linha super fina e elegante
-                alignSelf: 'center',
-                marginVertical: 10,
-              }}
-            />
-          
-          <View style={styles.rowEements2}>
-            <View style={styles.columnInnerContent}>
-              <Text>R$ 180,00</Text>
-              <Text>Com desconto</Text>
-            </View>
-
-             
-
-            <View style={styles.sessionsControl}>
-              <ProgressSessions total={4} done={2}/>
-
-              <Text>Sessão 2/4</Text>
-            </View>    
-
-          </View>
-         
-        </View>
-      </TouchableOpacity> 
+  {/* Resumo */}
+    <View style={styles.summaryCard}>
+    <View style={styles.summaryItem}>
+      <Text style={styles.summaryNumber}>12</Text>
+      <Text style={styles.summaryLabel}>Ativos</Text>
     </View>
-    
+
+    <View style={styles.summaryDivider} />
+
+    <View style={styles.summaryItem}>
+        <Text style={styles.summaryNumber}>4</Text>
+        <Text style={styles.summaryLabel}>Finalizados</Text>
+     </View>
+
+     <View style={styles.summaryDivider} />
+
+      <View style={styles.summaryItem}>
+        <Text style={styles.summaryNumber}>R$ 2.4k</Text>
+        <Text style={styles.summaryLabel}>Receita</Text>
+      </View>
+    </View>
+
+  {/* Lista */}
+   <Text style={styles.sectionTitle}>Pacotes em aberto:</Text>
+
+   <PackageCard
+      name="Sabrina Sato"
+      startDate="22/11/2025"
+      service="Manicure Premium"
+      price="R$ 180,00"
+      remainingSessions={2}
+      totalSessions={4}
+      completedSessions={2}
+      observations="2 sessões restantes"
+    />
+
+   <PackageCard
+      name="Fernanda Lima"
+      startDate="18/11/2025"
+      service="Blindagem Premium"
+      price="R$ 240,00"
+      remainingSessions={1}
+      totalSessions={4}
+      completedSessions={3}
+      observations="Última sessão pendente"
+     />
+   </ScrollView>
+
+{/* Botão flutuante */}
+     <TouchableOpacity
+       style={styles.floatingButton}
+       onPress={() => navigation.navigate('NewPackage')}
+     >
+       <Ionicons name="add" size={30} color="#FFF" />
+     </TouchableOpacity>
+   </View>
   );
 }
 
 const styles = StyleSheet.create({
-    mainStyleView:{
-      flex: 1,
-      backgroundColor: "#fab4e3ff"
-    },
-    titleMainView:{
-      marginTop: 17,
-      alignItems: 'center',
-      justifyContent:'center',
-      width: '100%',
-      height: 40,
-      backgroundColor: '#f0eded'
-      
-    },
-    innerTitleContent:{
-      fontSize: 18,
-      fontWeight: 'bold',
-       color: '#696868'
-    },
-    motherStyleMainView:{
-      height: 150,
-      width: '100%',
-      backgroundColor: '#fff',
-     
+  container: {
+   flex: 1,
+   backgroundColor: '#f8bbd0',
+  },
 
-    },
-    rowElements:{
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      padding: 4,
+  scrollContainer: {
+   paddingBottom: 100,
+  },
 
-    },
-    columnElementsView:{
-      flexDirection: 'column',
-      marginLeft: 6
-    },
-    custumerName:{
-      fontWeight: 'bold',
-      fontSize: 16
-    },
-    restantApointPackNumber:{
-      marginTop: 6,
-      marginRight: 6,
-      padding: 13,
-      backgroundColor: 'rgba(241, 79, 201, 0.91)',
-      borderRadius: 12,
-      
-    },
-    innerPackageNumber:{
-      fontWeight: 'bold',
-      color: '#fff',
-    },
-    rowEements2:{
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      padding: 4
-    },
-    columnInnerContent:{
-      flexDirection: 'column',
-      marginLeft: 6
-    },
-    sessionsControl:{
-      marginRight: 6
-    }
+  header: {
+   paddingTop: 50,
+   paddingHorizontal: 24,
+   paddingBottom: 20,
+  },
 
-})
+  greeting: {
+   fontSize: 30,
+   fontWeight: 'bold',
+   color: '#2b2b2b',
+  },
+
+  subtitle: {
+   fontSize: 15,
+   color: '#6b6b6b',
+   marginTop: 6,
+  },
+
+  summaryCard: {
+   width: '92%',
+   alignSelf: 'center',
+   backgroundColor: '#fff',
+   borderRadius: 22,
+   paddingVertical: 22,
+   flexDirection: 'row',
+   justifyContent: 'space-around',
+   alignItems: 'center',
+
+   shadowColor: '#000',
+   shadowOffset: { width: 0, height: 4 },
+   shadowOpacity: 0.08,
+   shadowRadius: 8,
+   elevation: 4,
+  },
+
+  summaryItem: {
+   alignItems: 'center',
+  },
+
+  summaryNumber: {
+   fontSize: 20,
+   fontWeight: 'bold',
+   color: '#E91E63',
+  },
+
+summaryLabel: {
+   fontSize: 13,
+   color: '#666',
+   marginTop: 4,
+  },
+
+summaryDivider: {
+   width: 1,
+   height: 40,
+   backgroundColor: '#EEE',
+  },
+
+sectionTitle: {
+   fontSize: 20,
+   fontWeight: 'bold',
+   color: '#2b2b2b',
+   marginTop: 26,
+   marginLeft: 22,
+   marginBottom: 8,
+  },
+
+floatingButton: {
+   position: 'absolute',
+   right: 24,
+   bottom: 30,
+   width: 64,
+   height: 64,
+   borderRadius: 32,
+   backgroundColor: '#E91E63',
+   justifyContent: 'center',
+   alignItems: 'center',
+
+shadowColor: '#E91E63',
+   shadowOffset: { width: 0, height: 4 },
+   shadowOpacity: 0.35,
+   shadowRadius: 6,
+   elevation: 8,
+ },
+});
