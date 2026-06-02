@@ -44,6 +44,7 @@ export function TabRoutes() {
     },
     tabBarActiveTintColor: '#f394cfff',
     tabBarInactiveTintColor: '#999',
+    tabBarStyle: { backgroundColor: '#fdedf3' }, // ← Altere aqui!
   })}>
   <Tab.Screen name="Home" component={HomeStack} />
   <Tab.Screen name="Painel" component={DashboardStack} />

@@ -8,13 +8,81 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import Appointments from '../../components/Appointments';
+import { API_URL } from '../../services/api';
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback } from 'react';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useNavigation } from '@react-navigation/native';
+import { HomeStackParamList } from '../../routes/home.stack';
+
+type NavigationProps = NativeStackNavigationProp<HomeStackParamList, 'HomeMain'>;
+
 
 export default function Home() {
+interface Cliente {
+  id_cliente: number;
+  nome_cliente: string;
+  // adicione outras propriedades conforme API retorna
+}
+
+interface Atendimento {
+  id_atendimento: number;
+  fk_cliente_id: number;
+  data_atendimento: string, 
+  horario_inicio: string;
+  horario_fim: string;
+  tipo_atendimento: string;
+  observacao: string; 
+  status: string;
+  valor_final: number; 
+  // adicione outras propriedades conforme API retorna
+}
+
+
+const navigation = useNavigation<NavigationProps>();
+
   const [showPicker, setShowPicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [atendimentos, setAtendimentos] = useState<Atendimento[]>([]);
+  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  
+    async function carregarAtendimentos() {
+      try{
+        const [resAtendimentos, resClientes] = await Promise.all([
+          fetch(`${API_URL}/atendimentos`),
+          fetch(`${API_URL}/clientes`)
+        ]);
+
+        const atendimentosData = await resAtendimentos.json();
+        const clientesData = await resClientes.json();
+
+        setAtendimentos(atendimentosData);
+        setClientes(clientesData);
+
+      } catch(error){
+        console.log("Erro ao carregar dados: ", error);
+
+      } finally {
+        setLoading(false);
+
+      }
+    }
+
+    useFocusEffect(
+      useCallback(() => {
+        carregarAtendimentos();
+      }, [])
+    );
+
+  
+  if(loading){
+    return <Text>Carregando atendimentos...</Text>;
+  }
 
   const onChange = (event: any, date?: Date) => {
     setShowPicker(false);
@@ -22,6 +90,11 @@ export default function Home() {
       setSelectedDate(date);
     }
   };
+
+  function formatarData(data: string){
+    return new Date(data).toLocaleDateString('pt-BR');
+  }
+
 
   return (
     <ScrollView contentContainerStyle={styles.scrollContainer}>
@@ -89,17 +162,33 @@ export default function Home() {
           <Text style={styles.sectionTitle}>Atendimentos agendados</Text>
         </View>
 
-        <Appointments
-          name="Maria Silva"
-          time="12:00 - 14:00"
-          service="Esmaltação em gel"
-        />
+        {atendimentos.map((item: any) => {
+          const cliente = clientes.find(
+          (c) => c.id_cliente === item.fk_cliente_id
+        );
 
-        <Appointments
-          name="Fernanda Souza"
-          time="15:00 - 17:00"
-          service="Alongamento de unhas"
-        />
+        return (
+         <Appointments
+            key={item.id_atendimento}
+            name={cliente?.nome_cliente || "Cliente não encontrado"}
+            time={`${item.horario_inicio.slice(0,5)} - ${item.horario_fim.slice(0,5)}`}
+            service={item.tipo_atendimento}
+            status={item.status}
+            onPress={() =>
+              navigation.navigate('ClientDetails', {
+              id_atendimento: item.id_atendimento,  
+              name: cliente?.nome_cliente || "Cliente não encontrado",
+              time: `${item.horario_inicio.slice(0,5)} - ${item.horario_fim.slice(0,5)}`,
+              service: item.tipo_atendimento,
+              dateAppointment: formatarData(item.data_atendimento),
+              description: item.observacao,
+              total: item.valor_final.replace('.',','),
+              status: item.status
+              })
+            }
+          />
+        );
+      })}
 
         <StatusBar style="dark" />
       </View>
@@ -206,4 +295,5 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
   },
-}); 
+});
+

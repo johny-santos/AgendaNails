@@ -1,51 +1,81 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TextInput,
-  TouchableOpacity,
-  Platform,
-  KeyboardAvoidingView
+    View,
+    Text,
+    StyleSheet,
+    ScrollView,
+    TextInput,
+    TouchableOpacity,
+    Platform,
+    KeyboardAvoidingView
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-
 import TimeDropdown from '../../components/TimeDropdown';
 import MultiSelectServices from '../../components/MultiSelectServices';
+import { API_URL } from '../../services/api';
+import Decimal from 'decimal.js';
+import { Service } from '../../types/Service';
+
 
 export default function NewClient() {
-  const [clientName, setClientName] = useState<string>('');
-  const [clientPhone, setClientPhone] = useState<string>('');
-  const [description, setDescription] = useState<string>('');
 
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
+    const [clientName, setClientName] = useState<string>('');
+    const [clientPhone, setClientPhone] = useState<string>('');
+    const [description, setDescription] = useState<string>('');
+    const [totalToPay, setTotalToPay] = useState<Decimal>(new Decimal(0));
+    const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+    const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
+    const [startTime, setStartTime] = useState<string>('');
+    const [endTime, setEndTime] = useState<string>('');
+    const [services, setServices] = useState<Service[]>([]);
+    const [selectedServices, setSelectedServices] = useState<number[]>([]);
+    const [loading, setLoading] = useState(true);
 
-  const [startTime, setStartTime] = useState<string>('');
-  const [endTime, setEndTime] = useState<string>('');
+    useEffect(() => {
+      const total = services
+        .filter(service => selectedServices.includes(service.id_servico))
+        .reduce(
+          (acc, service) => acc.plus(new Decimal(service.valor_base)),
+          new Decimal(0)
+        );
 
-  const [selectedServices, setSelectedServices] = useState<string[]>([]);
+        setTotalToPay(total);
 
-  const servicesList: string[] = [
-     'Manicure',
-     'Pedicure',
-     'Manicure + Pedicure',
-     'Blindagem',
-     'Banho de gel',
-     'Esmaltação em gel',
-     'Fibra de vidro',
-     'Unha de gel',
-     'Manutenção de fibra',
-     'Manutenção de gel',
-     'Spa dos pés',
-     'Cuticulagem',
-     'Alongamento',
-     'Remoção',
-    ];
+      }, [selectedServices, services]);  
+    
+
+     useEffect(() => {
+        async function carregarServicosDropDown() {
+          try{
+            const [resServices] = await Promise.all([
+              fetch(`${API_URL}/servicos`)
+            ]);
+    
+            const servicosData = await resServices.json();
+            
+    
+            setServices(servicosData);
+    
+          } catch(error){
+            console.log("Erro ao carregar dados: ", error);
+    
+          } finally {
+            setLoading(false);
+    
+          }
+        }
+    
+        carregarServicosDropDown();
+    
+      }, []);
+    
+      if(loading){
+        return <Text>Carregando serviços...</Text>;
+      }
+
 
   const generateStartTimes = (): string[] => {
-     const times: string[] = [];
+    const times: string[] = [];
 
     for (let hour = 8; hour <= 19; hour++) {
      times.push(`${hour.toString().padStart(2, '0')}:00`);
@@ -70,29 +100,55 @@ export default function NewClient() {
     }
 
     return times;
-  };
+    };
 
   const onChangeDate = (event: any, selected?: Date): void => {
     setShowDatePicker(false);
 
     if (selected) {
-      setSelectedDate(selected);
+        setSelectedDate(selected);
     }
-  };
+    }; 
+  
+  async function handleCreateAppointment() {
+    try {
+      const response = await fetch(`${API_URL}/agendamentoCompleto`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          nome_cliente: clientName,
+          telefone: clientPhone,
+          data_atendimento: selectedDate.toISOString().split("T")[0],
+          horario_inicio: startTime,
+          horario_fim: endTime,
+          observacao: description,
+          servicos: selectedServices
+        }),
+      });
 
-  const handleCreateAppointment = (): void => {
-    console.log({
-     clientName,
-     clientPhone,
-     selectedDate,
-     startTime,
-     endTime,
-     selectedServices,
-     description,
-    });
+      const data = await response.json();
 
- // Futuramente integrar com backend
-  };
+      if (response.ok) {
+        alert("Atendimento criado com sucesso!");
+
+        setClientName('');
+        setClientPhone('');
+        setDescription('');
+        setSelectedServices([]);
+        setStartTime('');
+        setEndTime('');
+
+      } else {
+        alert(data.erro || "Erro ao criar atendimento");
+      }
+
+    } catch (error) {
+      console.log("Erro:", error);
+      alert("Erro ao conectar com servidor");
+    }
+  }
 
   return (
 
@@ -103,9 +159,9 @@ export default function NewClient() {
     <ScrollView style={styles.container}>
      {/* HEADER */}
      <View style={styles.header}>
-       <Text style={styles.headerTitle}>Novo Atendimento</Text>
+       <Text style={styles.headerTitle}>Cadastre sua cliente de forma rápida</Text>
        <Text style={styles.headerSubtitle}>
-         Cadastre sua cliente de forma rápida
+         
        </Text>
      </View>
 
@@ -173,10 +229,32 @@ export default function NewClient() {
     />
   {/* SERVIÇOS */}
     <MultiSelectServices
-      services={servicesList}
+      services={services}
       selectedServices={selectedServices}
       onSelectionChange={setSelectedServices}
     />
+
+    <View style={styles.labelContainer}>
+      <Text style={styles.label}>Preço atendimento</Text>
+    </View>
+
+    <View style={styles.input}>
+  <Text style={styles.currencyInside}>R$</Text>
+
+  <TextInput
+    style={styles.priceInput}
+    placeholder="150,00"
+    keyboardType="decimal-pad"
+    value={totalToPay.toFixed(2).replace('.', ',')}
+    onChangeText={(text) => {
+      try {
+        const normalized = text.replace(',', '.');
+        const value = new Decimal(normalized || 0);
+        setTotalToPay(value);
+      } catch (error) {}
+    }}
+  />
+</View>
 
  {/* OBSERVAÇÕES */}
     <View style={styles.labelContainer}>
@@ -221,7 +299,8 @@ const styles = StyleSheet.create({
   },
 
   headerTitle: {
-    fontSize: 28,
+    fontSize: 22,
+    textAlign: 'center',
     fontWeight: 'bold',
     color: '#fff',
   },
@@ -251,7 +330,8 @@ const styles = StyleSheet.create({
     borderColor: '#d81b60',
     borderRadius: 12,
     alignSelf: 'center',
-    justifyContent: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 14,
     marginTop: 8,
   },
@@ -293,4 +373,18 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 18,
  },
+
+  currencyInside: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginRight: 8,
+  },
+
+  priceInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#333',
+  },
+
 });

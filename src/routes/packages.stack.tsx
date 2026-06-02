@@ -24,7 +24,7 @@ export function PackagesStack() {
         header: ({ navigation }) => (
           <Header 
             title="Pacotes"
-            showAddButton={true}
+            showAddButton={false}
              actionLabel="Novo Pacote"
             onActionPress={() => navigation.navigate('NewPackage')} 
           />
