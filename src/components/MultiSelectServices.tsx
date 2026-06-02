@@ -1,5 +1,3 @@
-
-
 import React, { useState } from 'react';
 import {
   View,
@@ -9,11 +7,12 @@ import {
   ScrollView,
   StyleSheet,
 } from 'react-native';
+import { Service } from '../types/Service';
 
 interface MultiSelectServicesProps {
-  services: string[];
-  selectedServices: string[];
-  onSelectionChange: (services: string[]) => void;
+  services: Service[];
+  selectedServices: number[];
+  onSelectionChange: (services: number[]) => void;
 }
 
 export default function MultiSelectServices({
@@ -23,21 +22,21 @@ export default function MultiSelectServices({
 }: MultiSelectServicesProps) {
   const [modalVisible, setModalVisible] = useState<boolean>(false);
 
-  const toggleService = (service: string): void => {
-    if (selectedServices.includes(service)) {
+  const toggleService = (serviceId: number): void => {
+    if (selectedServices.includes(serviceId)) {
       const updatedServices = selectedServices.filter(
-        (item: string) => item !== service
+        (item: number) => item !== serviceId
       );
       onSelectionChange(updatedServices);
     } else {
-      const updatedServices = [...selectedServices, service];
+      const updatedServices = [...selectedServices, serviceId];
       onSelectionChange(updatedServices);
     }
   };
 
-  const removeService = (service: string): void => {
+  const removeService = (serviceId: number): void => {
     const updatedServices = selectedServices.filter(
-      (item: string) => item !== service
+      (item: number) => item !== serviceId
     );
     onSelectionChange(updatedServices);
   };
@@ -59,15 +58,18 @@ export default function MultiSelectServices({
 
       {/* Serviços Selecionados */}
       <View style={styles.selectedContainer}>
-        {selectedServices.map((service: string, index: number) => (
-          <View key={index} style={styles.serviceTag}>
-            <Text style={styles.serviceTagText}>{service}</Text>
+        {selectedServices.map((serviceId: number) => {
+          const service = services.find(s => s.id_servico === serviceId);
+          return (
+            <View key={serviceId} style={styles.serviceTag}>
+              <Text style={styles.serviceTagText}>{service?.nome_servico}</Text>
 
-            <TouchableOpacity onPress={() => removeService(service)}>
-              <Text style={styles.removeText}>✕</Text>
-            </TouchableOpacity>
-          </View>
-        ))}
+              <TouchableOpacity onPress={() => removeService(serviceId)}>
+                <Text style={styles.removeText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+          );
+        })}
       </View>
 
       {/* Modal Dropdown */}
@@ -81,22 +83,30 @@ export default function MultiSelectServices({
             <Text style={styles.modalTitle}>Selecione os Serviços</Text>
 
             <ScrollView style={styles.scrollArea}>
-              {services.map((service: string, index: number) => {
-                const isSelected = selectedServices.includes(service);
+              {services.map((service: Service) => {
+                const isSelected = selectedServices.includes(service.id_servico);
 
                 return (
                   <TouchableOpacity
-                    key={index}
+                    key={service.id_servico}
                     style={[
                       styles.optionItem,
                       isSelected && styles.optionSelected,
                     ]}
-                    onPress={() => toggleService(service)}
+                    onPress={() => toggleService(service.id_servico)}
                   >
-                    <Text style={styles.optionText}>
-                      {isSelected ? '✔ ' : ''}
-                      {service}
-                    </Text>
+                    <View style={styles.optionContent}>
+                      <Text style={styles.optionText}>
+                        {isSelected ? '✔ ' : ''}
+                        {service.nome_servico}
+                      </Text>
+                      <Text style={styles.optionPrice}>
+                        R$ {Number(service.valor_base).toLocaleString('pt-BR', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                          })}
+                      </Text>
+                    </View>
                   </TouchableOpacity>
                 );
               })}
@@ -215,9 +225,23 @@ const styles = StyleSheet.create({
     backgroundColor: '#fce4ec',
   },
 
+  optionContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+
   optionText: {
     fontSize: 16,
     color: '#333',
+    flex: 1,
+  },
+
+  optionPrice: {
+    fontSize: 14,
+    color: '#d81b60',
+    fontWeight: 'bold',
+    marginLeft: 10,
   },
 
   closeButton: {

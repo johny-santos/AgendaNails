@@ -1,131 +1,338 @@
-import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
-
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  TouchableOpacity, 
+  ScrollView 
+} from 'react-native';
+import { useState, useEffect } from 'react';
 import { useRoute } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
+import { API_URL } from '../../services/api';
+
 
 export default function ClientDetails() {
+
+  interface Atendimentos_servicos{
+    id_atendimento_servico: number,
+    valor_aplicado: string,
+    fk_servico_id: number,
+    fk_atendimento_id: number,
+
+    Servico: {
+      id_servico: number,
+      nome_servico: string,
+      valor_base: string,
+      duracao_minutos_servico: number;
+      fk_categoria_servico_id: number;
+    }
+  }
+
   const route = useRoute();
-  const { name, time, service } = route.params as any;
+
+  const { 
+    id_atendimento,
+    name, 
+    time, 
+    service,
+    description,
+    dateAppointment,
+    total,
+    status,
+  } = route.params as any;
+
+  const [atendimento_servicos, setAtendimento_servicos] = useState<Atendimentos_servicos[]>([]);
+
+
+  async function listarAtendimentosPorCliente(){
+    try {
+      const resAtendimentoPorCliente  = await fetch(
+        (`${API_URL}/atendimento_servico/atendimento/${id_atendimento}`)
+      )
+
+      const atendimentosPorIdData = await resAtendimentoPorCliente.json();
+
+      setAtendimento_servicos(atendimentosPorIdData)
+
+    } catch(error){
+
+      console.log("Erro ao buscar os atendimentos", error);
+    
+    }
+  } 
+
+  useEffect(() => {
+    listarAtendimentosPorCliente();
+  }, [])
+
+  
 
   return (
-    <View style={styles.roseView}>
-      <View style={styles.alignView}>
-        <View style={styles.whiteMainView}>
-          <View style={styles.textSheet}>
-            <Text style={{ fontWeight: 'bold', fontSize: 17 }}>Nome: </Text> 
-            <Text style={{ fontSize: 17 }}>{name}</Text>             
-          </View>
 
-          <View style={styles.textSheet}>
-            <Text style={{ fontWeight: 'bold', fontSize: 17 }}>Horário: </Text> 
-            <Text style={{ fontSize: 17 }}>{time}</Text>
-          </View>
+    <ScrollView style={styles.container}>
 
-          <View style={styles.textSheet}>  
-            <Text style={{ fontWeight: 'bold', fontSize: 17 }}>Tipo de serviço: </Text> 
-            <Text style={{ fontSize: 17 }}>{service}</Text>
-          </View>
+      {/* HEADER */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>{name}</Text>
 
-          <View style={styles.textSheet}>  
-            <Text style={{ fontWeight: 'bold', fontSize: 17 }}>Descrição/Obs: </Text> 
-            <Text style={{ fontSize: 17 }}>{}</Text>
-          </View>
-
+        <View style={styles.statusBadge}>
+          <Text style={styles.statusText}>{status}</Text>
         </View>
       </View>
 
-      <View style={styles.alignView}>
-          <TouchableOpacity style={styles.buttonsComponent}>
-             <Text style={styles.textButton}>Cliente compareceu</Text>
-          </TouchableOpacity>
+      {/* CARD AGENDAMENTO */}
+      <View style={styles.card}>
 
-          <TouchableOpacity style={styles.buttonsComponent}>
-             <Text style={styles.textButton}>Cliente Faltou</Text>
-          </TouchableOpacity>
+        <Text style={styles.sectionTitle}>📅 Informações do Atendimento</Text>
 
-          <TouchableOpacity style={styles.buttonsComponent}>
-             <Text style={styles.textButton}>Cliente Desmarcou</Text>
-          </TouchableOpacity>
+        <View style={styles.infoRow}>
+          <Ionicons name="calendar-outline" size={20} color="#d81b60" />
+          <Text style={styles.infoText}>Data: {dateAppointment}</Text>
+        </View>
+
+        <View style={styles.infoRow}>
+          <Ionicons name="time-outline" size={20} color="#d81b60" />
+          <Text style={styles.infoText}>Horário: {time}</Text>
+        </View>
+
+        <View style={styles.infoRow}>
+          <Ionicons name="sparkles-outline" size={20} color="#d81b60" />
+          <Text style={styles.infoText}>{service}</Text>
+        </View>
+
       </View>
 
-      <View style={styles.alignViewRow}>
-         <TouchableOpacity style={styles.rowsButtonsView}>
-             <Text style={styles.textButton}>Editar</Text>
-          </TouchableOpacity>
+      
+      <View style={styles.card}>
 
-          <TouchableOpacity style={styles.rowsButtonsView}>
-             <Text style={styles.textButton}>Excluir</Text>
-          </TouchableOpacity>
-          
+        <Text style={styles.sectionTitle}>💅 Serviços</Text>
+        
+        {atendimento_servicos.map((item) => (
+
+          <View
+            key={item.id_atendimento_servico}
+            style={styles.infoRow}
+          >
+
+            <Ionicons
+              name="sparkles-outline"
+              size={20}
+              color="#d81b60"
+            />
+
+            <Text style={styles.infoText}>
+              {item.Servico.nome_servico}
+            </Text>
+
+          </View>
+
+        ))}
       </View>
 
-    </View>  
+      {/* CARD VALOR */}
+      <View style={styles.card}>
+
+        <Text style={styles.sectionTitle}>💰 Valor Total</Text>
+
+        <Text style={styles.totalText}>
+          R$ {total}
+        </Text>
+
+      </View>
+
+      {/* CARD OBSERVAÇÕES */}
+      <View style={styles.card}>
+
+        <Text style={styles.sectionTitle}>📝 Observações</Text>
+
+        <Text style={styles.descriptionText}>
+          {description || 'Nenhuma observação adicionada.'}
+        </Text>
+
+      </View>
+
+      {/* BOTÕES STATUS */}
+      <View style={styles.actionsContainer}>
+
+        <TouchableOpacity style={styles.successButton}>
+          <Text style={styles.buttonText}>Cliente Compareceu</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.warningButton}>
+          <Text style={styles.buttonText}>Reagendar</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.dangerButton}>
+          <Text style={styles.buttonText}>Cliente Cancelou</Text>
+        </TouchableOpacity>
+
+      </View>
+
+      {/* BOTÕES FINAIS */}
+      <View style={styles.footerButtons}>
+
+        <TouchableOpacity style={styles.editButton}>
+          <Ionicons name="create-outline" size={20} color="#fff" />
+          <Text style={styles.footerButtonText}>Editar</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.deleteButton}>
+          <Ionicons name="trash-outline" size={20} color="#fff" />
+          <Text style={styles.footerButtonText}>Excluir</Text>
+        </TouchableOpacity>
+
+      </View>
+
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-    roseView:{
-      flex: 1,
-      backgroundColor: '#fab4e3ff',
-    },
-    alignView:{
-         
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginTop: '5%'
 
-    },
-    whiteMainView:{
-      width: '87%',
-      height: 280,
-      padding: 14,
-      backgroundColor: '#fff',
-      borderRadius: 12,
+  container: {
+    flex: 1,
+    backgroundColor: '#fab4e3ff',
+    paddingHorizontal: 16,
+    paddingTop: 25,
+  },
 
-      shadowColor: "#000",
-          shadowOffset: { width: 8, height: 8 },
-          shadowOpacity: 10.25,
-          shadowRadius: 8.84,
-          elevation: 7
+  header: {
+    marginBottom: 20,
+  },
 
-    },
-    textSheet:{
-      flexDirection: 'row',
-      marginTop: 8,
-      fontSize: 13
-    },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#6a006a',
+  },
 
-    buttonsComponent:{
-      width: '87%',
-      height: 50,
-      backgroundColor: 'rgba(182, 17, 141, 0.91)',
-      borderRadius: 12,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginTop: 12,
+  statusBadge: {
+    marginTop: 10,
+    backgroundColor: '#d81b60',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
 
-      
-      
-    },
+  statusText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 13,
+  },
 
-    textButton:{
-      fontWeight: 'bold',
-      color: '#fff'
-    },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    padding: 18,
+    marginBottom: 16,
 
-    alignViewRow:{
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginTop: '5%',
+    shadowColor: "#000",
+    shadowOffset: { width: 2, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 5,
+    elevation: 5,
+  },
 
-    },
-    rowsButtonsView:{
-      padding: 25,
-      marginLeft: 13,
-      backgroundColor: 'rgba(241, 79, 201, 0.91)',
-      borderRadius: 12
-      
-    }
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#6a006a',
+    marginBottom: 14,
+  },
 
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
 
-})
+  infoText: {
+    marginLeft: 10,
+    fontSize: 16,
+    color: '#333',
+  },
+
+  totalText: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#d81b60',
+  },
+
+  descriptionText: {
+    fontSize: 15,
+    color: '#555',
+    lineHeight: 22,
+  },
+
+  actionsContainer: {
+    marginTop: 10,
+  },
+
+  successButton: {
+    backgroundColor: '#2e7d32',
+    height: 52,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+
+  warningButton: {
+    backgroundColor: '#f9a825',
+    height: 52,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+
+  dangerButton: {
+    backgroundColor: '#c62828',
+    height: 52,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  buttonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+
+  footerButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 24,
+    marginBottom: 40,
+  },
+
+  editButton: {
+    flexDirection: 'row',
+    backgroundColor: '#ab47bc',
+    width: '47%',
+    height: 55,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  deleteButton: {
+    flexDirection: 'row',
+    backgroundColor: '#e53935',
+    width: '47%',
+    height: 55,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  footerButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    marginLeft: 8,
+    fontSize: 16,
+  },
+
+});

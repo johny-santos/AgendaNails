@@ -1,32 +1,33 @@
 import React from 'react';
 import { View, TouchableOpacity, StyleSheet, Text } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useNavigation } from '@react-navigation/native';
-import { HomeStackParamList } from '../routes/home.stack';
 
 interface AppointmentsProps {
   name: string;
   time: string;
   service: string;
+
+  dateAppointment?: string;
+  description?: string;
+  total?: string;
+  status?: string;
+
+  onPress?: () => void;
 }
 
-type NavigationProps = NativeStackNavigationProp<HomeStackParamList, 'HomeMain'>;
-
-export default function Appointments({ name, time, service }: AppointmentsProps) {
-  const navigation = useNavigation<NavigationProps>();
+export default function Appointments({
+  name,
+  time,
+  service,
+  status,
+  onPress
+}: AppointmentsProps) {
 
   return (
     <TouchableOpacity
       style={styles.mainCard}
       activeOpacity={0.9}
-      onPress={() =>
-        navigation.navigate('ClientDetails', {
-          name,
-          time,
-          service,
-        })
-      }
+      onPress={onPress}
     >
       <View style={styles.topRow}>
         <View style={styles.avatarContainer}>
@@ -49,6 +50,12 @@ export default function Appointments({ name, time, service }: AppointmentsProps)
             />
             <Text style={styles.serviceText}>{service}</Text>
           </View>
+
+          {status && (
+            <View style={styles.statusContainer}>
+              <Text style={styles.statusText}>{status}</Text>
+            </View>
+          )}
         </View>
 
         <Ionicons name="chevron-forward" size={22} color="#CCC" />
@@ -116,4 +123,19 @@ const styles = StyleSheet.create({
     color: '#666',
     fontSize: 14,
   },
-}); 
+
+  statusContainer: {
+    marginTop: 6,
+    backgroundColor: '#FCE4EC',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+
+  statusText: {
+    color: '#C2185B',
+    fontWeight: 'bold',
+    fontSize: 12,
+  },
+});
