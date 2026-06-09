@@ -16,6 +16,8 @@ export default function NewClient() {
   const navigation = useNavigation<any>();
   const today = new Date().toLocaleDateString('pt-BR');
 
+  // Estados do formulário de novo atendimento.
+  // Cada campo digitado na tela fica salvo em um estado até o usuário tocar em Agendar.
   const [name, setName] = useState('');
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
@@ -25,6 +27,7 @@ export default function NewClient() {
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
+    // Validação simples para impedir salvar atendimento incompleto.
     if (!name.trim() || !startTime.trim() || !endTime.trim() || !service.trim() || !date.trim()) {
       Alert.alert('Erro', 'Preencha nome, horários, serviço e data.');
       return;
@@ -32,6 +35,8 @@ export default function NewClient() {
 
     setSaving(true);
     try {
+      // Salva o atendimento no AsyncStorage por meio do serviço appointmentsStorage.
+      // Depois a Home carrega esse atendimento pela data selecionada.
       await addAppointment({
         name: name.trim(),
         startTime: startTime.trim(),
@@ -42,6 +47,7 @@ export default function NewClient() {
       });
 
       Alert.alert('Sucesso', 'Atendimento agendado com sucesso!');
+      // Volta para a agenda para o usuário visualizar o atendimento cadastrado.
       navigation.goBack();
     } catch {
       Alert.alert('Erro', 'Não foi possível salvar o atendimento.');
@@ -135,6 +141,7 @@ interface FieldProps {
   placeholder: string;
 }
 
+// Componente auxiliar para evitar repetir o mesmo bloco de label + input várias vezes.
 function Field({ label, icon, value, onChangeText, placeholder }: FieldProps) {
   return (
     <>

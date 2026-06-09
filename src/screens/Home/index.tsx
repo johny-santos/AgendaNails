@@ -27,6 +27,7 @@ export default function Home() {
 
   const selectedDateText = selectedDate.toLocaleDateString('pt-BR');
 
+  // Carrega o nome do usuário salvo no login/cadastro para personalizar a saudação.
   useEffect(() => {
     const carregarUsuario = async () => {
       const usuario = await apiService.obterUsuarioArmazenado();
@@ -38,6 +39,8 @@ export default function Home() {
     carregarUsuario();
   }, []);
 
+  // Recarrega os atendimentos sempre que a tela ganha foco ou a data muda.
+  // Isso faz um novo atendimento aparecer na Home assim que o usuário volta da tela de cadastro.
   useFocusEffect(
     useCallback(() => {
       const carregarAtendimentos = async () => {
@@ -50,6 +53,7 @@ export default function Home() {
   );
 
   const handleNovoAtendimento = () => {
+    // A tela NewClient está registrada no RootRoutes, por isso subimos dois níveis na navegação.
     navigation.getParent()?.getParent()?.navigate('NewClient');
   };
 
@@ -140,6 +144,7 @@ export default function Home() {
             <Text style={styles.emptyText}>Nenhum atendimento para esta data.</Text>
           </View>
         ) : (
+          // Renderiza os atendimentos salvos no AsyncStorage para a data selecionada.
           appointments.map((appointment) => (
             <Appointments
               key={appointment.id}

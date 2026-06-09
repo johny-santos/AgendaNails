@@ -12,12 +12,15 @@ export default function ClientDetails() {
   const { id, name, time, service, date, description, status } = route.params as any;
 
   const handleStatus = async (newStatus: AppointmentStatus) => {
+    // Atualiza o status salvo localmente e volta para a Home,
+    // onde a lista será recarregada automaticamente.
     await updateAppointmentStatus(id, newStatus);
     Alert.alert('Atualizado', 'Status do atendimento atualizado.');
     navigation.goBack();
   };
 
   const handleDelete = () => {
+    // Confirma antes de excluir para evitar apagar um atendimento por engano.
     Alert.alert('Excluir', 'Deseja excluir este atendimento?', [
       { text: 'Cancelar', style: 'cancel' },
       {
@@ -76,6 +79,7 @@ export default function ClientDetails() {
   );
 }
 
+// Linha reutilizável para exibir as informações principais do atendimento.
 function InfoLine({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.textSheet}>

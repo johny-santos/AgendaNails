@@ -10,6 +10,8 @@ export default function App() {
 
   useEffect(() => {
     const checkAuth = async () => {
+      // Verifica se já existe token salvo no celular.
+      // Se existir, o app abre direto nas abas principais; se não, abre no login.
       const token = await apiService.obterTokenArmazenado();
       setInitialRouteName(token ? 'MainTabs' : 'Auth');
       setLoading(false);
