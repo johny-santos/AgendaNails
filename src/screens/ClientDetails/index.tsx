@@ -1,131 +1,157 @@
-import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
-
-import { useRoute } from '@react-navigation/native';
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import {
+  AppointmentStatus,
+  deleteAppointment,
+  updateAppointmentStatus,
+} from '../../services/appointmentsStorage';
 
 export default function ClientDetails() {
+  const navigation = useNavigation<any>();
   const route = useRoute();
-  const { name, time, service } = route.params as any;
+  const { id, name, time, service, date, description, status } = route.params as any;
+
+  const handleStatus = async (newStatus: AppointmentStatus) => {
+    await updateAppointmentStatus(id, newStatus);
+    Alert.alert('Atualizado', 'Status do atendimento atualizado.');
+    navigation.goBack();
+  };
+
+  const handleDelete = () => {
+    Alert.alert('Excluir', 'Deseja excluir este atendimento?', [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Excluir',
+        style: 'destructive',
+        onPress: async () => {
+          await deleteAppointment(id);
+          navigation.goBack();
+        },
+      },
+    ]);
+  };
 
   return (
     <View style={styles.roseView}>
       <View style={styles.alignView}>
         <View style={styles.whiteMainView}>
-          <View style={styles.textSheet}>
-            <Text style={{ fontWeight: 'bold', fontSize: 17 }}>Nome: </Text> 
-            <Text style={{ fontSize: 17 }}>{name}</Text>             
-          </View>
-
-          <View style={styles.textSheet}>
-            <Text style={{ fontWeight: 'bold', fontSize: 17 }}>Horário: </Text> 
-            <Text style={{ fontSize: 17 }}>{time}</Text>
-          </View>
-
-          <View style={styles.textSheet}>  
-            <Text style={{ fontWeight: 'bold', fontSize: 17 }}>Tipo de serviço: </Text> 
-            <Text style={{ fontSize: 17 }}>{service}</Text>
-          </View>
-
-          <View style={styles.textSheet}>  
-            <Text style={{ fontWeight: 'bold', fontSize: 17 }}>Descrição/Obs: </Text> 
-            <Text style={{ fontSize: 17 }}>{}</Text>
-          </View>
-
+          <InfoLine label="Nome" value={name} />
+          <InfoLine label="Data" value={date} />
+          <InfoLine label="Horário" value={time} />
+          <InfoLine label="Tipo de serviço" value={service} />
+          <InfoLine label="Status" value={status} />
+          <InfoLine label="Descrição/Obs" value={description || 'Sem observações'} />
         </View>
       </View>
 
       <View style={styles.alignView}>
-          <TouchableOpacity style={styles.buttonsComponent}>
-             <Text style={styles.textButton}>Cliente compareceu</Text>
-          </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.buttonsComponent}
+          onPress={() => handleStatus('COMPARECEU')}
+        >
+          <Text style={styles.textButton}>Cliente compareceu</Text>
+        </TouchableOpacity>
 
-          <TouchableOpacity style={styles.buttonsComponent}>
-             <Text style={styles.textButton}>Cliente Faltou</Text>
-          </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.buttonsComponent}
+          onPress={() => handleStatus('FALTOU')}
+        >
+          <Text style={styles.textButton}>Cliente faltou</Text>
+        </TouchableOpacity>
 
-          <TouchableOpacity style={styles.buttonsComponent}>
-             <Text style={styles.textButton}>Cliente Desmarcou</Text>
-          </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.buttonsComponent}
+          onPress={() => handleStatus('DESMARCOU')}
+        >
+          <Text style={styles.textButton}>Cliente desmarcou</Text>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.alignViewRow}>
-         <TouchableOpacity style={styles.rowsButtonsView}>
-             <Text style={styles.textButton}>Editar</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.rowsButtonsView}>
-             <Text style={styles.textButton}>Excluir</Text>
-          </TouchableOpacity>
-          
+        <TouchableOpacity style={styles.rowsButtonsView} onPress={handleDelete}>
+          <Text style={styles.textButton}>Excluir</Text>
+        </TouchableOpacity>
       </View>
+    </View>
+  );
+}
 
-    </View>  
+function InfoLine({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.textSheet}>
+      <Text style={styles.infoLabel}>{label}: </Text>
+      <Text style={styles.infoValue}>{value}</Text>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-    roseView:{
-      flex: 1,
-      backgroundColor: '#fab4e3ff',
-    },
-    alignView:{
-         
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginTop: '5%'
+  roseView: {
+    flex: 1,
+    backgroundColor: '#fab4e3ff',
+  },
 
-    },
-    whiteMainView:{
-      width: '87%',
-      height: 280,
-      padding: 14,
-      backgroundColor: '#fff',
-      borderRadius: 12,
+  alignView: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: '5%',
+  },
 
-      shadowColor: "#000",
-          shadowOffset: { width: 8, height: 8 },
-          shadowOpacity: 10.25,
-          shadowRadius: 8.84,
-          elevation: 7
+  whiteMainView: {
+    width: '87%',
+    minHeight: 280,
+    padding: 14,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 7,
+  },
 
-    },
-    textSheet:{
-      flexDirection: 'row',
-      marginTop: 8,
-      fontSize: 13
-    },
+  textSheet: {
+    flexDirection: 'row',
+    marginTop: 8,
+    flexWrap: 'wrap',
+  },
 
-    buttonsComponent:{
-      width: '87%',
-      height: 50,
-      backgroundColor: 'rgba(182, 17, 141, 0.91)',
-      borderRadius: 12,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginTop: 12,
+  infoLabel: {
+    fontWeight: 'bold',
+    fontSize: 17,
+  },
 
-      
-      
-    },
+  infoValue: {
+    fontSize: 17,
+    flexShrink: 1,
+  },
 
-    textButton:{
-      fontWeight: 'bold',
-      color: '#fff'
-    },
+  buttonsComponent: {
+    width: '87%',
+    height: 50,
+    backgroundColor: 'rgba(182, 17, 141, 0.91)',
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 12,
+  },
 
-    alignViewRow:{
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginTop: '5%',
+  textButton: {
+    fontWeight: 'bold',
+    color: '#fff',
+  },
 
-    },
-    rowsButtonsView:{
-      padding: 25,
-      marginLeft: 13,
-      backgroundColor: 'rgba(241, 79, 201, 0.91)',
-      borderRadius: 12
-      
-    }
+  alignViewRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: '5%',
+  },
 
-
-})
+  rowsButtonsView: {
+    paddingVertical: 18,
+    paddingHorizontal: 36,
+    backgroundColor: '#D81B60',
+    borderRadius: 12,
+  },
+});

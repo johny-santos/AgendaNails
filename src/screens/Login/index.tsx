@@ -38,8 +38,10 @@ export default function Login() {
       const resposta = await apiService.login(email, password);
 
       if (resposta.sucesso) {
-        // Login bem-sucedido - navegue para o app principal
-        navigation.getParent()?.navigate('MainTabs');
+        navigation.getParent()?.reset({
+          index: 0,
+          routes: [{ name: 'MainTabs' as never }],
+        });
       }
     } catch (erro: any) {
       Alert.alert('Erro de Login', erro.mensagem || 'Erro ao fazer login');
@@ -134,7 +136,12 @@ export default function Login() {
           {/* Botão temporário para testes */}
           <TouchableOpacity
             style={styles.skipButton}
-            onPress={() => navigation.getParent()?.navigate('MainTabs')}
+            onPress={() =>
+              navigation.getParent()?.reset({
+                index: 0,
+                routes: [{ name: 'MainTabs' as never }],
+              })
+            }
           >
             <Text style={styles.skipText}>⚙️ Pular login (Dev)</Text>
           </TouchableOpacity>

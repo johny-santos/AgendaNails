@@ -69,9 +69,11 @@ export default function Register() {
       const resposta = await apiService.registrar(name, email, password);
 
       if (resposta.sucesso) {
-        // Cadastro bem-sucedido - navegue para o app principal
         Alert.alert('Sucesso', 'Cadastro realizado com sucesso!');
-        navigation.getParent()?.navigate('MainTabs');
+        navigation.getParent()?.reset({
+          index: 0,
+          routes: [{ name: 'MainTabs' as never }],
+        });
       }
     } catch (erro: any) {
       Alert.alert('Erro de Cadastro', erro.mensagem || 'Erro ao cadastrar');

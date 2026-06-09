@@ -9,9 +9,13 @@ import apiService from '../services/apiService';
 export type HomeStackParamList = {
   HomeMain: undefined;
   ClientDetails: {
+    id: string;
     name: string;
     time: string;
     service: string;
+    date: string;
+    description: string;
+    status: string;
   };
 };
 

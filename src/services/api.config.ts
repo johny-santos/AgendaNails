@@ -3,7 +3,7 @@
 // URL do servidor que roda em seu IP local
 // ─────────────────────────────────────────────────────────────
 
-export const API_BASE_URL = 'http://192.168.100.107:3000/api';
+export const API_BASE_URL = 'https://next-player-nemeses.ngrok-free.dev/api';
 
 // Endpoints específicos
 export const AUTH_ENDPOINTS = {

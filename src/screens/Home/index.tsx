@@ -8,17 +8,24 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import Appointments from '../../components/Appointments';
 import apiService from '../../services/apiService';
+import {
+  Appointment,
+  listAppointmentsByDate,
+} from '../../services/appointmentsStorage';
 
 export default function Home() {
   const navigation = useNavigation<any>();
   const [showPicker, setShowPicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [nomeUsuario, setNomeUsuario] = useState('Cliente');
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+
+  const selectedDateText = selectedDate.toLocaleDateString('pt-BR');
 
   useEffect(() => {
     const carregarUsuario = async () => {
@@ -30,6 +37,17 @@ export default function Home() {
 
     carregarUsuario();
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      const carregarAtendimentos = async () => {
+        const data = await listAppointmentsByDate(selectedDateText);
+        setAppointments(data);
+      };
+
+      carregarAtendimentos();
+    }, [selectedDateText])
+  );
 
   const handleNovoAtendimento = () => {
     navigation.getParent()?.getParent()?.navigate('NewClient');
@@ -107,7 +125,7 @@ export default function Home() {
           )}
 
           <Text style={styles.chosenDateText}>
-            Data selecionada: {selectedDate.toLocaleDateString('pt-BR')}
+            Data selecionada: {selectedDateText}
           </Text>
         </View>
 
@@ -116,17 +134,25 @@ export default function Home() {
           <Text style={styles.sectionTitle}>Atendimentos agendados</Text>
         </View>
 
-        <Appointments
-          name="Maria Silva"
-          time="12:00 - 14:00"
-          service="Esmaltação em gel"
-        />
-
-        <Appointments
-          name="Fernanda Souza"
-          time="15:00 - 17:00"
-          service="Alongamento de unhas"
-        />
+        {appointments.length === 0 ? (
+          <View style={styles.emptyCard}>
+            <Ionicons name="calendar-clear-outline" size={28} color="#E91E63" />
+            <Text style={styles.emptyText}>Nenhum atendimento para esta data.</Text>
+          </View>
+        ) : (
+          appointments.map((appointment) => (
+            <Appointments
+              key={appointment.id}
+              id={appointment.id}
+              name={appointment.name}
+              time={`${appointment.startTime} - ${appointment.endTime}`}
+              service={appointment.service}
+              date={appointment.date}
+              description={appointment.description}
+              status={appointment.status}
+            />
+          ))
+        )}
 
         <StatusBar style="dark" />
       </View>
@@ -246,5 +272,21 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#333',
+  },
+
+  emptyCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 22,
+    alignItems: 'center',
+    elevation: 3,
+  },
+
+  emptyText: {
+    color: '#666',
+    fontSize: 15,
+    fontWeight: '600',
+    marginTop: 8,
+    textAlign: 'center',
   },
 }); 

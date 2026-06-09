@@ -6,9 +6,16 @@ import { AuthStack } from './auth.stack';
 
 const Stack = createNativeStackNavigator();
 
-export function RootRoutes() {
+interface RootRoutesProps {
+  initialRouteName?: 'Auth' | 'MainTabs';
+}
+
+export function RootRoutes({ initialRouteName = 'Auth' }: RootRoutesProps) {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator
+      initialRouteName={initialRouteName}
+      screenOptions={{ headerShown: false }}
+    >
 
       <Stack.Screen
         name="Auth"

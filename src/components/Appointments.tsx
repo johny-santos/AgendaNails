@@ -6,14 +6,26 @@ import { useNavigation } from '@react-navigation/native';
 import { HomeStackParamList } from '../routes/home.stack';
 
 interface AppointmentsProps {
+  id: string;
   name: string;
   time: string;
   service: string;
+  date: string;
+  description: string;
+  status: string;
 }
 
 type NavigationProps = NativeStackNavigationProp<HomeStackParamList, 'HomeMain'>;
 
-export default function Appointments({ name, time, service }: AppointmentsProps) {
+export default function Appointments({
+  id,
+  name,
+  time,
+  service,
+  date,
+  description,
+  status,
+}: AppointmentsProps) {
   const navigation = useNavigation<NavigationProps>();
 
   return (
@@ -22,9 +34,13 @@ export default function Appointments({ name, time, service }: AppointmentsProps)
       activeOpacity={0.9}
       onPress={() =>
         navigation.navigate('ClientDetails', {
+          id,
           name,
           time,
           service,
+          date,
+          description,
+          status,
         })
       }
     >
@@ -49,6 +65,8 @@ export default function Appointments({ name, time, service }: AppointmentsProps)
             />
             <Text style={styles.serviceText}>{service}</Text>
           </View>
+
+          <Text style={styles.statusText}>{status}</Text>
         </View>
 
         <Ionicons name="chevron-forward" size={22} color="#CCC" />
@@ -115,5 +133,17 @@ const styles = StyleSheet.create({
     marginLeft: 6,
     color: '#666',
     fontSize: 14,
+  },
+
+  statusText: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#FCE4EC',
+    color: '#E91E63',
+    fontSize: 12,
+    fontWeight: 'bold',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    marginTop: 2,
   },
 }); 
