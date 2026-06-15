@@ -9,7 +9,13 @@ import {
 export default function ClientDetails() {
   const navigation = useNavigation<any>();
   const route = useRoute();
-  const { id, name, time, service, date, description, status } = route.params as any;
+  const { id, name, time, service, serviceValue, date, description, status } = route.params as any;
+  const formattedServiceValue = typeof serviceValue === 'number'
+    ? serviceValue.toLocaleString('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+      })
+    : 'Não informado';
 
   const handleStatus = async (newStatus: AppointmentStatus) => {
     // Atualiza o status salvo localmente e volta para a Home,
@@ -42,6 +48,7 @@ export default function ClientDetails() {
           <InfoLine label="Data" value={date} />
           <InfoLine label="Horário" value={time} />
           <InfoLine label="Tipo de serviço" value={service} />
+          <InfoLine label="Valor do serviço" value={formattedServiceValue} />
           <InfoLine label="Status" value={status} />
           <InfoLine label="Descrição/Obs" value={description || 'Sem observações'} />
         </View>

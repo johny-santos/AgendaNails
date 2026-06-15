@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import {
   Alert,
+  KeyboardTypeOptions,
   ScrollView,
   StyleSheet,
   Text,
@@ -22,6 +23,7 @@ export default function NewClient() {
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [service, setService] = useState('');
+  const [serviceValue, setServiceValue] = useState('');
   const [date, setDate] = useState(today);
   const [description, setDescription] = useState('');
   const [saving, setSaving] = useState(false);
@@ -30,6 +32,15 @@ export default function NewClient() {
     // Validação simples para impedir salvar atendimento incompleto.
     if (!name.trim() || !startTime.trim() || !endTime.trim() || !service.trim() || !date.trim()) {
       Alert.alert('Erro', 'Preencha nome, horários, serviço e data.');
+      return;
+    }
+
+    const parsedServiceValue = Number(
+      serviceValue.replace(/\./g, '').replace(',', '.')
+    );
+
+    if (!serviceValue.trim() || Number.isNaN(parsedServiceValue) || parsedServiceValue <= 0) {
+      Alert.alert('Erro', 'Informe um valor de serviço válido.');
       return;
     }
 
@@ -42,13 +53,19 @@ export default function NewClient() {
         startTime: startTime.trim(),
         endTime: endTime.trim(),
         service: service.trim(),
+        serviceValue: parsedServiceValue,
         date: date.trim(),
         description: description.trim(),
       });
 
       Alert.alert('Sucesso', 'Atendimento agendado com sucesso!');
       // Volta para a agenda para o usuário visualizar o atendimento cadastrado.
-      navigation.goBack();
+      navigation.navigate('MainTabs', {
+        screen: 'Home',
+        params: {
+          screen: 'HomeMain',
+        },
+      });
     } catch {
       Alert.alert('Erro', 'Não foi possível salvar o atendimento.');
     } finally {
@@ -99,6 +116,15 @@ export default function NewClient() {
       />
 
       <Field
+        label="Valor do serviço*"
+        icon="cash-outline"
+        value={serviceValue}
+        onChangeText={setServiceValue}
+        placeholder="Ex.: 70,00"
+        keyboardType="decimal-pad"
+      />
+
+      <Field
         label="Data do atendimento*"
         icon="calendar-outline"
         value={date}
@@ -139,10 +165,18 @@ interface FieldProps {
   value: string;
   onChangeText: (value: string) => void;
   placeholder: string;
+  keyboardType?: KeyboardTypeOptions;
 }
 
 // Componente auxiliar para evitar repetir o mesmo bloco de label + input várias vezes.
-function Field({ label, icon, value, onChangeText, placeholder }: FieldProps) {
+function Field({
+  label,
+  icon,
+  value,
+  onChangeText,
+  placeholder,
+  keyboardType = 'default',
+}: FieldProps) {
   return (
     <>
       <View style={styles.labelTextContainer}>
@@ -158,6 +192,7 @@ function Field({ label, icon, value, onChangeText, placeholder }: FieldProps) {
             onChangeText={onChangeText}
             placeholder={placeholder}
             placeholderTextColor="#999"
+            keyboardType={keyboardType}
           />
         </View>
       </View>

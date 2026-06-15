@@ -14,14 +14,39 @@ export interface Appointment {
   startTime: string;
   endTime: string;
   service: string;
+  serviceValue?: number;
   date: string;
   description: string;
   status: AppointmentStatus;
 }
 
+function normalizeDate(date: string): string {
+  const [day, month, year] = date.trim().split('/').map(Number);
+
+  if (!day || !month || !year) {
+    return date.trim();
+  }
+
+  return [
+    String(day).padStart(2, '0'),
+    String(month).padStart(2, '0'),
+    String(year),
+  ].join('/');
+}
+
 async function getAppointments(): Promise<Appointment[]> {
   const stored = await AsyncStorage.getItem(STORAGE_KEY);
   return stored ? JSON.parse(stored) : [];
+}
+
+export async function listAppointments(): Promise<Appointment[]> {
+  const appointments = await getAppointments();
+  return appointments.sort((a, b) => {
+    const dateComparison = a.date.localeCompare(b.date);
+    return dateComparison === 0
+      ? a.startTime.localeCompare(b.startTime)
+      : dateComparison;
+  });
 }
 
 async function saveAppointments(appointments: Appointment[]): Promise<void> {
@@ -30,11 +55,12 @@ async function saveAppointments(appointments: Appointment[]): Promise<void> {
 
 export async function listAppointmentsByDate(date: string): Promise<Appointment[]> {
   const appointments = await getAppointments();
+  const normalizedSelectedDate = normalizeDate(date);
 
   // A Home chama esta função sempre que a data selecionada muda.
   // Por isso filtramos pela data e ordenamos pelo horário inicial.
   return appointments
-    .filter((appointment) => appointment.date === date)
+    .filter((appointment) => normalizeDate(appointment.date) === normalizedSelectedDate)
     .sort((a, b) => a.startTime.localeCompare(b.startTime));
 }
 
@@ -47,6 +73,7 @@ export async function addAppointment(
   // Todo novo atendimento começa com status AGENDADO.
   const newAppointment: Appointment = {
     ...appointment,
+    date: normalizeDate(appointment.date),
     id: `${Date.now()}`,
     status: 'AGENDADO',
   };

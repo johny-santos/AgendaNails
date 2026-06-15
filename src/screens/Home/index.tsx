@@ -152,6 +152,7 @@ export default function Home() {
               name={appointment.name}
               time={`${appointment.startTime} - ${appointment.endTime}`}
               service={appointment.service}
+              serviceValue={appointment.serviceValue}
               date={appointment.date}
               description={appointment.description}
               status={appointment.status}
