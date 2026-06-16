@@ -14,7 +14,6 @@ export interface Appointment {
   startTime: string;
   endTime: string;
   service: string;
-  serviceValue?: number;
   date: string;
   description: string;
   status: AppointmentStatus;

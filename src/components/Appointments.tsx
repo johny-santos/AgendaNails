@@ -10,7 +10,6 @@ interface AppointmentsProps {
   name: string;
   time: string;
   service: string;
-  serviceValue?: number;
   date: string;
   description: string;
   status: string;
@@ -23,7 +22,6 @@ export default function Appointments({
   name,
   time,
   service,
-  serviceValue,
   date,
   description,
   status,
@@ -40,7 +38,6 @@ export default function Appointments({
           name,
           time,
           service,
-          serviceValue,
           date,
           description,
           status,
@@ -68,18 +65,6 @@ export default function Appointments({
             />
             <Text style={styles.serviceText}>{service}</Text>
           </View>
-
-          {typeof serviceValue === 'number' && (
-            <View style={styles.infoRow}>
-              <Ionicons name="cash-outline" size={16} color="#777" />
-              <Text style={styles.serviceText}>
-                {serviceValue.toLocaleString('pt-BR', {
-                  style: 'currency',
-                  currency: 'BRL',
-                })}
-              </Text>
-            </View>
-          )}
 
           <Text style={styles.statusText}>{status}</Text>
         </View>

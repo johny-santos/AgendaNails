@@ -13,7 +13,6 @@ export type HomeStackParamList = {
     name: string;
     time: string;
     service: string;
-    serviceValue?: number;
     date: string;
     description: string;
     status: string;

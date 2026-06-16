@@ -13,6 +13,7 @@ import {
   Appointment,
   listAppointments,
 } from '../../services/appointmentsStorage';
+import { getPackageAppointmentsCount } from '../../services/packagesSummary';
 
 type PeriodFilter = 'today' | 'week' | 'month';
 
@@ -22,7 +23,6 @@ interface ServiceChartItem {
   color: string;
 }
 
-const MONTHLY_GOAL = 5000;
 const serviceColors = ['#D81B60', '#00897B', '#5E35B1', '#F57C00'];
 
 const periodOptions: Array<{ label: string; value: PeriodFilter }> = [
@@ -83,13 +83,6 @@ function matchesPeriod(appointment: Appointment, period: PeriodFilter) {
   return isSameMonth(appointmentDate, today);
 }
 
-function formatCurrency(value: number) {
-  return value.toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  });
-}
-
 function buildServiceChart(appointments: Appointment[]): ServiceChartItem[] {
   const serviceCount = appointments.reduce<Record<string, number>>((acc, appointment) => {
     const service = appointment.service || 'Sem serviço';
@@ -145,18 +138,11 @@ export default function Dashboard() {
   const missedAppointments = filteredAppointments.filter(
     (appointment) => appointment.status === 'FALTOU'
   );
-  const billableAppointments = filteredAppointments.filter(
-    (appointment) => appointment.status !== 'FALTOU' && appointment.status !== 'DESMARCOU'
-  );
   const uniqueClients = new Set(filteredAppointments.map((appointment) => appointment.name)).size;
-  const serviceRevenue = billableAppointments.reduce(
-    (total, appointment) => total + (appointment.serviceValue || 0),
-    0
-  );
+  const packageAppointmentsCount = getPackageAppointmentsCount();
   const absenceRate = filteredAppointments.length
     ? Math.round((missedAppointments.length / filteredAppointments.length) * 100)
     : 0;
-  const goalPercent = Math.min(Math.round((serviceRevenue / MONTHLY_GOAL) * 100), 100);
   const topServices = buildServiceChart(filteredAppointments);
   const topService = topServices[0];
   const chartTotal = topServices.reduce((total, service) => total + service.amount, 0);
@@ -214,8 +200,15 @@ export default function Dashboard() {
         <KpiCard
           icon={<Ionicons name="calendar-outline" size={26} color="#D81B60" />}
           value={`${filteredAppointments.length}`}
-          label="Atendimentos"
-          helper="no período"
+          label="Atendimento avulso"
+          helper="cadastrado na Home"
+        />
+
+        <KpiCard
+          icon={<MaterialCommunityIcons name="package-variant" size={26} color="#5E35B1" />}
+          value={`${packageAppointmentsCount}`}
+          label="Atendimentos pacote"
+          helper="sessões em pacotes"
         />
 
         <KpiCard
@@ -226,33 +219,11 @@ export default function Dashboard() {
         />
 
         <KpiCard
-          icon={<Ionicons name="cash-outline" size={26} color="#5E35B1" />}
-          value={formatCurrency(serviceRevenue)}
-          label="Faturamento"
-          helper="serviços válidos"
-        />
-
-        <KpiCard
           icon={<Ionicons name="alert-circle-outline" size={26} color="#F57C00" />}
           value={`${absenceRate}%`}
           label="Faltas"
           helper={`${missedAppointments.length} registro(s)`}
         />
-      </View>
-
-      <View style={styles.sectionCard}>
-        <View style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionTitle}>Meta de faturamento</Text>
-          <Text style={styles.sectionBadge}>{goalPercent}%</Text>
-        </View>
-
-        <Text style={styles.metricLabel}>
-          {formatCurrency(serviceRevenue)} de {formatCurrency(MONTHLY_GOAL)}
-        </Text>
-        <View style={styles.progressBackground}>
-          <View style={[styles.progressFill, { width: `${goalPercent}%` as `${number}%` }]} />
-        </View>
-        <Text style={styles.metricValue}>Cálculo baseado nos valores cadastrados em cada serviço</Text>
       </View>
 
       <View style={styles.sectionCard}>
@@ -294,26 +265,6 @@ export default function Dashboard() {
         ))}
       </View>
 
-      <View style={styles.quickActions}>
-        <TouchableOpacity style={styles.actionButton}>
-          <Ionicons name="calendar-outline" size={22} color="#fff" />
-          <Text style={styles.actionText}>Agenda</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.actionButton}>
-          <Ionicons name="people-outline" size={22} color="#fff" />
-          <Text style={styles.actionText}>Clientes</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.actionButton}>
-          <MaterialCommunityIcons
-            name="package-variant"
-            size={22}
-            color="#fff"
-          />
-          <Text style={styles.actionText}>Pacotes</Text>
-        </TouchableOpacity>
-      </View>
     </ScrollView>
   );
 }
@@ -514,33 +465,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
 
-  metricLabel: {
-    fontSize: 15,
-    color: '#444',
-    marginBottom: 8,
-  },
-
-  metricValue: {
-    marginTop: 8,
-    fontWeight: '600',
-    color: '#D81B60',
-    fontSize: 13,
-  },
-
-  progressBackground: {
-    width: '100%',
-    height: 14,
-    backgroundColor: '#FCE4EC',
-    borderRadius: 10,
-    overflow: 'hidden',
-  },
-
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#00897B',
-    borderRadius: 10,
-  },
-
   chartArea: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -651,27 +575,4 @@ const styles = StyleSheet.create({
     lineHeight: 21,
   },
 
-  quickActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 24,
-    marginBottom: 40,
-  },
-
-  actionButton: {
-    flex: 1,
-    backgroundColor: '#D81B60',
-    marginHorizontal: 4,
-    padding: 14,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  actionText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    marginTop: 6,
-    fontSize: 13,
-  },
 });

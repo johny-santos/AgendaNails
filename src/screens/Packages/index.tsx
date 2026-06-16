@@ -3,11 +3,13 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { PackagesStackParamList } from '../../routes/packages.stack';
 import  ProgressSessions  from '../../components/ProgressSessions';
+import { packageSummaries } from '../../services/packagesSummary';
 
 type NavigationProps = NativeStackNavigationProp<PackagesStackParamList, 'PackagesMain'>;
 
 export default function Packages() {
   const navigation = useNavigation<NavigationProps>();
+  const packageItem = packageSummaries[0];
 
   return (
    
@@ -19,16 +21,16 @@ export default function Packages() {
 
       <TouchableOpacity
         onPress={() => navigation.navigate('PackageDetails', {
-          name: 'Sabrina Sato',
+          name: packageItem.clientName,
           time: '22/11/2025',
-          service: 'Manicure Premium',
-          observations: '2 sessões restantes'
+          service: packageItem.service,
+          observations: `${packageItem.totalSessions - packageItem.completedSessions} sessões restantes`
         })}
       >
         <View style={styles.motherStyleMainView}>
           <View style={styles.rowElements}>
             <View style={styles.columnElementsView}>
-              <Text style={styles.custumerName}>Sabrina Sato</Text>
+              <Text style={styles.custumerName}>{packageItem.clientName}</Text>
               <Text>
                 Início: {/* Conteúdo puxado do banco */} 
                 <Text style={{ fontWeight: 'bold', fontSize: 16 }}>22/11/2025</Text> 
@@ -36,7 +38,9 @@ export default function Packages() {
             </View>
 
             <View style={styles.restantApointPackNumber}>
-              <Text style={styles.innerPackageNumber}>2 sessões restant.</Text>
+              <Text style={styles.innerPackageNumber}>
+                {packageItem.totalSessions - packageItem.completedSessions} sessões restant.
+              </Text>
             </View>
           </View>
             
@@ -59,9 +63,14 @@ export default function Packages() {
              
 
             <View style={styles.sessionsControl}>
-              <ProgressSessions total={4} done={2}/>
+              <ProgressSessions
+                total={packageItem.totalSessions}
+                done={packageItem.completedSessions}
+              />
 
-              <Text>Sessão 2/4</Text>
+              <Text>
+                Sessão {packageItem.completedSessions}/{packageItem.totalSessions}
+              </Text>
             </View>    
 
           </View>
