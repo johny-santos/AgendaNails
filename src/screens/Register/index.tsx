@@ -26,15 +26,15 @@ import { AuthStackParamList } from '../../routes/auth.stack';
 // Serviço de API
 import apiService from '../../services/apiService';
 
-// Tipagem da navegação para a tela de Cadastro
+// Tipagem da navegação para a tela de cadastro profissional
 type NavigationProps = NativeStackNavigationProp<AuthStackParamList, 'Register'>;
 
 export default function Register() {
   // Hook de navegação tipado
   const navigation = useNavigation<NavigationProps>();
 
-  // Estados dos campos do formulário
-  const [name, setName] = useState('');             // Nome completo
+  // Estados dos campos do formulário da profissional
+  const [name, setName] = useState('');             // Nome da profissional
   const [email, setEmail] = useState('');           // E-mail
   const [password, setPassword] = useState('');     // Senha
   const [confirmPassword, setConfirmPassword] = useState(''); // Confirmar senha
@@ -46,7 +46,7 @@ export default function Register() {
   // Estado de carregamento
   const [carregando, setCarregando] = useState(false);
 
-  // ── Handler para fazer cadastro ──
+  // ── Handler para fazer cadastro da profissional ──
   const handleRegistrar = async () => {
     // Validações
     if (!name || !email || !password || !confirmPassword) {
@@ -69,14 +69,14 @@ export default function Register() {
       const resposta = await apiService.registrar(name, email, password);
 
       if (resposta.sucesso) {
-        Alert.alert('Sucesso', 'Cadastro realizado com sucesso!');
+        Alert.alert('Sucesso', 'Cadastro profissional realizado com sucesso!');
         navigation.getParent()?.reset({
           index: 0,
           routes: [{ name: 'MainTabs' as never }],
         });
       }
     } catch (erro: any) {
-      Alert.alert('Erro de Cadastro', erro.mensagem || 'Erro ao cadastrar');
+      Alert.alert('Erro de Cadastro', erro.mensagem || 'Erro ao cadastrar profissional');
       console.error('Erro cadastro:', erro);
     } finally {
       setCarregando(false);
@@ -96,20 +96,20 @@ export default function Register() {
           <View style={styles.logoArea}>
             <Ionicons name="sparkles" size={48} color="#E91E63" />
             <Text style={styles.appName}>AgendaNails</Text>
-            <Text style={styles.tagline}>Crie sua conta gratuitamente</Text>
+            <Text style={styles.tagline}>Acesso para profissionais do salão</Text>
           </View>
 
           {/* ── Card principal com o formulário ── */}
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Cadastro</Text>
+            <Text style={styles.cardTitle}>Cadastro profissional</Text>
 
-            {/* Campo: Nome completo */}
-            <Text style={styles.label}>Nome completo</Text>
+            {/* Campo: Nome da profissional */}
+            <Text style={styles.label}>Nome da profissional</Text>
             <View style={styles.inputWrapper}>
               <Ionicons name="person-outline" size={20} color="#E91E63" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
-                placeholder="Seu nome"
+                placeholder="Seu nome profissional"
                 placeholderTextColor="#BBB"
                 autoCapitalize="words"
                 value={name}
@@ -176,7 +176,7 @@ export default function Register() {
               </TouchableOpacity>
             </View>
 
-            {/* Botão principal: Criar conta */}
+            {/* Botão principal: Criar conta profissional */}
             <TouchableOpacity
               style={[styles.registerButton, carregando && styles.buttonDisabled]}
               onPress={handleRegistrar}
@@ -185,7 +185,7 @@ export default function Register() {
               {carregando ? (
                 <ActivityIndicator color="#FFF" size="small" />
               ) : (
-                <Text style={styles.registerButtonText}>Criar conta</Text>
+                <Text style={styles.registerButtonText}>Criar conta profissional</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -205,7 +205,7 @@ export default function Register() {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Estilos da tela de Cadastro
+// Estilos da tela de Cadastro Profissional
 // Padrão visual: fundo rosa (#eeb1d8), cards brancos, destaque #E91E63
 // ─────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
@@ -301,7 +301,7 @@ const styles = StyleSheet.create({
     color: '#222',
   },
 
-  // Botão "Criar conta" — destaque rosa vibrante
+  // Botão "Criar conta profissional" — destaque rosa vibrante
   registerButton: {
     backgroundColor: '#E91E63',
     borderRadius: 16,

@@ -101,15 +101,15 @@ function buildServiceChart(appointments: Appointment[]): ServiceChartItem[] {
 }
 
 export default function Dashboard() {
-  const [nomeUsuario, setNomeUsuario] = useState('Cliente');
+  const [nomeUsuario, setNomeUsuario] = useState('Profissional');
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodFilter>('month');
 
   useEffect(() => {
     const carregarUsuario = async () => {
-      const usuario = await apiService.obterUsuarioArmazenado();
-      if (usuario?.nome) {
-        setNomeUsuario(usuario.nome);
+      const profissional = await apiService.obterUsuarioArmazenado();
+      if (profissional?.nome) {
+        setNomeUsuario(profissional.nome);
       }
     };
 

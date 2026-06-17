@@ -22,17 +22,17 @@ export default function Home() {
   const navigation = useNavigation<any>();
   const [showPicker, setShowPicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [nomeUsuario, setNomeUsuario] = useState('Cliente');
+  const [nomeUsuario, setNomeUsuario] = useState('Profissional');
   const [appointments, setAppointments] = useState<Appointment[]>([]);
 
   const selectedDateText = selectedDate.toLocaleDateString('pt-BR');
 
-  // Carrega o nome do usuário salvo no login/cadastro para personalizar a saudação.
+  // Carrega o nome da profissional salva no login/cadastro para personalizar a saudação.
   useEffect(() => {
     const carregarUsuario = async () => {
-      const usuario = await apiService.obterUsuarioArmazenado();
-      if (usuario?.nome) {
-        setNomeUsuario(usuario.nome);
+      const profissional = await apiService.obterUsuarioArmazenado();
+      if (profissional?.nome) {
+        setNomeUsuario(profissional.nome);
       }
     };
 

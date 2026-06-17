@@ -11,9 +11,30 @@ export default function App() {
   useEffect(() => {
     const checkAuth = async () => {
       // Verifica se já existe token salvo no celular.
-      // Se existir, o app abre direto nas abas principais; se não, abre no login.
+      // Se existir, valida no backend se a conta ainda é PROFISSIONAL/ADMIN.
       const token = await apiService.obterTokenArmazenado();
-      setInitialRouteName(token ? 'MainTabs' : 'Auth');
+
+      if (!token) {
+        setInitialRouteName('Auth');
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const resposta = await apiService.validarToken();
+        const tipoUsuario = resposta.usuario?.tipo_usuario;
+
+        if (tipoUsuario === 'PROFISSIONAL' || tipoUsuario === 'ADMIN') {
+          setInitialRouteName('MainTabs');
+        } else {
+          await apiService.limparAutenticacao();
+          setInitialRouteName('Auth');
+        }
+      } catch {
+        await apiService.limparAutenticacao();
+        setInitialRouteName('Auth');
+      }
+
       setLoading(false);
     };
 

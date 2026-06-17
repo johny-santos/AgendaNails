@@ -43,8 +43,8 @@ const iniciarServidor = async () => {
     app.listen(PORT, () => {
       console.log(`\n🚀 Servidor rodando em http://localhost:${PORT}`);
       console.log(`📝 Documentação das rotas:`);
-      console.log(`   POST   /api/auth/registrar  - Registrar novo usuário`);
-      console.log(`   POST   /api/auth/login      - Fazer login`);
+      console.log(`   POST   /api/auth/registrar  - Registrar nova profissional`);
+      console.log(`   POST   /api/auth/login      - Fazer login profissional`);
       console.log(`   GET    /api/auth/validar   - Validar token (protegida)`);
       console.log(`   GET    /health             - Health check\n`);
     });

@@ -3,8 +3,9 @@ import sequelize from '../config/database';
 import bcrypt from 'bcryptjs';
 
 // ─────────────────────────────────────────────────────────────
-// Modelo Usuario - Representa um usuário do sistema
-// Cada usuário pode fazer login e agendar atendimentos
+// Modelo Usuario - Representa uma conta de acesso ao sistema.
+// Nesta aplicação, quem faz login é a profissional do salão.
+// Clientes são cadastrados apenas nos atendimentos/agendamentos.
 // ─────────────────────────────────────────────────────────────
 class Usuario extends Model {
   public id_usuario!: number;
@@ -12,7 +13,7 @@ class Usuario extends Model {
   public email!: string;
   public senha!: string;
   public telefone?: string;
-  public tipo_usuario!: 'CLIENTE' | 'PROFISSIONAL' | 'ADMIN'; // CLIENTE: faz agendamentos, PROFISSIONAL: realiza atendimentos
+  public tipo_usuario!: 'CLIENTE' | 'PROFISSIONAL' | 'ADMIN';
   public status!: 'ATIVO' | 'INATIVO';
   public data_criacao!: Date;
   public data_modificacao?: Date;
@@ -54,7 +55,7 @@ Usuario.init(
     tipo_usuario: {
       type: DataTypes.ENUM('CLIENTE', 'PROFISSIONAL', 'ADMIN'),
       allowNull: false,
-      defaultValue: 'CLIENTE',
+      defaultValue: 'PROFISSIONAL',
     },
     status: {
       type: DataTypes.ENUM('ATIVO', 'INATIVO'),

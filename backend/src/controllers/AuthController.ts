@@ -8,10 +8,10 @@ import Usuario from '../models/Usuario';
 // ─────────────────────────────────────────────────────────────
 
 class AuthController {
-  // ── Registrar novo usuário ──
+  // ── Registrar nova profissional ──
   static async registrar(req: Request, res: Response): Promise<void> {
     try {
-      const { nome, email, senha, telefone, tipo_usuario } = req.body;
+      const { nome, email, senha, telefone } = req.body;
 
       // Valida campos obrigatórios
       if (!nome || !email || !senha) {
@@ -32,13 +32,14 @@ class AuthController {
         return;
       }
 
-      // Cria novo usuário
+      // Cria a conta de acesso da profissional.
+      // Cliente não entra no app; cliente é registrado dentro do atendimento.
       const novoUsuario = await Usuario.create({
         nome,
         email,
         senha,
         telefone: telefone || null,
-        tipo_usuario: tipo_usuario || 'CLIENTE',
+        tipo_usuario: 'PROFISSIONAL',
       });
 
       // Gera token JWT
@@ -50,7 +51,7 @@ class AuthController {
 
       res.status(201).json({
         sucesso: true,
-        mensagem: 'Usuário cadastrado com sucesso',
+        mensagem: 'Profissional cadastrada com sucesso',
         token,
         usuario: {
           id: novoUsuario.id_usuario,
@@ -63,12 +64,12 @@ class AuthController {
       console.error('Erro ao registrar:', erro);
       res.status(500).json({
         sucesso: false,
-        mensagem: 'Erro ao registrar usuário',
+        mensagem: 'Erro ao registrar profissional',
       });
     }
   }
 
-  // ── Login de usuário ──
+  // ── Login de profissional ──
   static async login(req: Request, res: Response): Promise<void> {
     try {
       const { email, senha } = req.body;
@@ -106,7 +107,17 @@ class AuthController {
       if (usuario.status === 'INATIVO') {
         res.status(403).json({
           sucesso: false,
-          mensagem: 'Usuário inativo',
+          mensagem: 'Profissional inativa',
+        });
+        return;
+      }
+
+      // Apenas profissionais/administradores acessam o aplicativo.
+      // Clientes não possuem login nesta regra de negócio.
+      if (usuario.tipo_usuario === 'CLIENTE') {
+        res.status(403).json({
+          sucesso: false,
+          mensagem: 'Esta conta não possui acesso profissional ao aplicativo',
         });
         return;
       }
@@ -151,7 +162,15 @@ class AuthController {
       if (!usuario) {
         res.status(404).json({
           sucesso: false,
-          mensagem: 'Usuário não encontrado',
+          mensagem: 'Profissional não encontrada',
+        });
+        return;
+      }
+
+      if (usuario.tipo_usuario === 'CLIENTE') {
+        res.status(403).json({
+          sucesso: false,
+          mensagem: 'Esta conta não possui acesso profissional ao aplicativo',
         });
         return;
       }

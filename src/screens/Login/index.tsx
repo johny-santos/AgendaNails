@@ -26,7 +26,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [carregando, setCarregando] = useState(false);
 
-  // ── Handler para fazer login ──
+  // ── Handler para fazer login da profissional ──
   const handleLogin = async () => {
     if (!email || !password) {
       Alert.alert('Erro', 'Email e senha são obrigatórios');
@@ -63,12 +63,12 @@ export default function Login() {
           <View style={styles.logoArea}>
             <Ionicons name="sparkles" size={52} color="#E91E63" />
             <Text style={styles.appName}>AgendaNails</Text>
-            <Text style={styles.tagline}>Sua agenda de beleza</Text>
+            <Text style={styles.tagline}>Acesso para profissionais</Text>
           </View>
 
           {/* Card de Login */}
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Entrar</Text>
+            <Text style={styles.cardTitle}>Entrar como profissional</Text>
 
             {/* Email */}
             <Text style={styles.label}>E-mail</Text>
@@ -127,24 +127,11 @@ export default function Login() {
 
           {/* Rodapé */}
           <View style={styles.footer}>
-            <Text style={styles.footerText}>Não tem uma conta? </Text>
+            <Text style={styles.footerText}>Profissional sem conta? </Text>
             <TouchableOpacity onPress={() => navigation.navigate('Register')}>
               <Text style={styles.footerLink}>Cadastre-se</Text>
             </TouchableOpacity>
           </View>
-
-          {/* Botão temporário para testes */}
-          <TouchableOpacity
-            style={styles.skipButton}
-            onPress={() =>
-              navigation.getParent()?.reset({
-                index: 0,
-                routes: [{ name: 'MainTabs' as never }],
-              })
-            }
-          >
-            <Text style={styles.skipText}>⚙️ Pular login (Dev)</Text>
-          </TouchableOpacity>
 
         </View>
       </ScrollView>
@@ -281,16 +268,5 @@ const styles = StyleSheet.create({
     color: '#E91E63',
     fontSize: 14,
     fontWeight: 'bold',
-  },
-
-  skipButton: {
-    alignItems: 'center',
-    marginTop: 16,
-    paddingVertical: 10,
-  },
-
-  skipText: {
-    color: '#888',
-    fontSize: 13,
   },
 });

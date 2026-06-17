@@ -4,17 +4,17 @@ import { autenticar } from '../middleware/auth';
 
 // ─────────────────────────────────────────────────────────────
 // Rotas de Autenticação
-// POST /api/auth/registrar - Registrar novo usuário
-// POST /api/auth/login - Fazer login
+// POST /api/auth/registrar - Registrar nova profissional
+// POST /api/auth/login - Fazer login profissional
 // GET /api/auth/validar - Validar token (protegida)
 // ─────────────────────────────────────────────────────────────
 
 const router = Router();
 
-// Rota pública: registrar novo usuário
+// Rota pública: registrar nova profissional
 router.post('/registrar', AuthController.registrar);
 
-// Rota pública: fazer login
+// Rota pública: fazer login profissional
 router.post('/login', AuthController.login);
 
 // Rota protegida: validar token (requer autenticação)

@@ -64,10 +64,12 @@ class ApiService {
         email,
         senha,
         telefone: telefone || null,
-        tipo_usuario: 'CLIENTE',
+        // Quem acessa o aplicativo é a profissional do salão.
+        // Clientes são cadastrados apenas dentro dos atendimentos/agendamentos.
+        tipo_usuario: 'PROFISSIONAL',
       });
 
-      // Se registro foi bem-sucedido, salva token e dados do usuário
+      // Se o cadastro profissional foi bem-sucedido, salva token e dados da profissional.
       if (response.data.token) {
         await this.salvarAutenticacao(response.data.token, response.data.usuario);
       }
@@ -88,7 +90,7 @@ class ApiService {
         senha,
       });
 
-      // Se login foi bem-sucedido, salva token e dados do usuário
+      // Se login foi bem-sucedido, salva token e dados da profissional.
       if (response.data.token) {
         await this.salvarAutenticacao(response.data.token, response.data.usuario);
       }
