@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -6,139 +6,380 @@ import {
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { API_URL } from '../../services/api';
+
+type PeriodFilter = 'today' | 'week' | 'month';
+
+interface ServiceChartItem {
+  name: string;
+  amount: number;
+  color: string;
+}
+
+interface ServicoRanking {
+    nome: string;
+    quantidade: number;
+}
+
+const serviceColors = ['#D81B60', '#00897B', '#5E35B1', '#F57C00'];
+
+const periodOptions: Array<{ label: string; value: PeriodFilter }> = [
+  { label: 'Hoje', value: 'today' },
+  { label: 'Semana', value: 'week' },
+  { label: 'Mês', value: 'month' },
+];
+
+function parseBrazilianDate(date: string): Date | null {
+  const [day, month, year] = date.split('/').map(Number);
+
+  if (!day || !month || !year) {
+    return null;
+  }
+
+  return new Date(year, month - 1, day);
+}
+
+function isSameDay(first: Date, second: Date) {
+  return first.toDateString() === second.toDateString();
+}
+
+function isSameWeek(date: Date, reference: Date) {
+  const weekStart = new Date(reference);
+  weekStart.setHours(0, 0, 0, 0);
+  weekStart.setDate(reference.getDate() - reference.getDay());
+
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
+  weekEnd.setHours(23, 59, 59, 999);
+
+  return date >= weekStart && date <= weekEnd;
+}
+
+function isSameMonth(first: Date, second: Date) {
+  return (
+    first.getMonth() === second.getMonth() &&
+    first.getFullYear() === second.getFullYear()
+  );
+}
+
+ function nomeCurto(nome: string){
+    if(nome.length <= 8) return nome;
+
+    return nome.substring(0,8) + '.'
+ } 
+/* 
+function matchesPeriod(appointment: Appointment, period: PeriodFilter) {
+  const appointmentDate = parseBrazilianDate(appointment.date);
+  const today = new Date();
+
+  if (!appointmentDate) {
+    return false;
+  }
+
+  if (period === 'today') {
+    return isSameDay(appointmentDate, today);
+  }
+
+  if (period === 'week') {
+    return isSameWeek(appointmentDate, today);
+  }
+
+  return isSameMonth(appointmentDate, today);
+} */
+
+/* function buildServiceChart(appointments: Appointment[]): ServiceChartItem[] {
+  const serviceCount = appointments.reduce<Record<string, number>>((acc, appointment) => {
+    const service = appointment.service || 'Sem serviço';
+    acc[service] = (acc[service] || 0) + 1;
+    return acc;
+  }, {}); 
+
+  return Object.entries(serviceCount)
+    .sort(([, firstAmount], [, secondAmount]) => secondAmount - firstAmount)
+    .slice(0, 4)
+    .map(([name, amount], index) => ({
+      name,
+      amount,
+      color: serviceColors[index] || '#AD1457',
+    }));
+}*/
 
 export default function Dashboard() {
+  const [clientes, setClientes] = useState([]);
+  const [atendimentos, setAtendimentos] = useState([]);
+  const [pacotes, setPacotes] = useState([]);
+  const [selectedPeriod, setSelectedPeriod] = useState<PeriodFilter>('month');
+  const [servicosMaisRealizados, setServicosMaisRealizados] = useState<ServicoRanking[]>([]);
+
+  const carregarDadosPainel = async (periodo: PeriodFilter = selectedPeriod) => {
+    try{
+      const [ clientesResponse, atendimentosResponse, pacotesResponse, servicosResponse ] = await Promise.all([
+        fetch(`${API_URL}/clientes`),
+        fetch(`${API_URL}/atendimentos`),
+        fetch(`${API_URL}/pacote`),
+        fetch(`${API_URL}/painel?periodo=${periodo}`)
+      ]);
+
+      const clienteData = await clientesResponse.json();
+
+      const atendimentosData = await atendimentosResponse.json();
+
+      const pacotesData = await pacotesResponse.json();
+
+      const painelData = await servicosResponse.json();
+
+      console.log('Painel: ', painelData);
+
+      setClientes(clienteData);
+      setAtendimentos(atendimentosData);
+      setPacotes(pacotesData);
+      setServicosMaisRealizados(painelData);
+
+      //console.log(clienteData);
+      //console.log(atendimentosData);
+      //console.log(pacotesData);
+
+
+    } catch(error){
+        console.log(error);
+    }
+  }
+  
+  useEffect(() =>{
+    carregarDadosPainel('month');
+  }, [])
+
+  const totalClientes = clientes.length;
+  const totalPacotes = pacotes.length;
+  const totalAtendimentosPacote = atendimentos.filter(
+    (item: any) => item.tipo_atendimento === 'PACOTE'
+  ).length
+
+  const totalAtendimentos = atendimentos.length;
+  const totalAtendimentosAvulsos = atendimentos.filter(
+    (item: any) => item.tipo_atendimento === 'AVULSO'
+  ).length
+
+  const totalFaltas = atendimentos.filter(
+    (item: any) => item.status === 'FALTOU'
+  ).length
+
+
+/*   const insights = [
+    topService
+      ? `${topService.name} representa ${bestServicePercent}% dos atendimentos do período.`
+      : 'Cadastre atendimentos para visualizar o serviço mais procurado.',
+    filteredAppointments.length
+      ? `${completedAppointments.length} de ${filteredAppointments.length} atendimentos foram marcados como compareceu.`
+      : 'Ainda não há atendimentos no período selecionado.',
+    absenceRate > 0
+      ? `A taxa de faltas está em ${absenceRate}%.`
+      : 'Nenhuma falta registrada no período.',
+  ]; */
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      {/* HEADER */}
       <View style={styles.header}>
-        <Text style={styles.greeting}>Olá, Mônica ✨</Text>
+        <Text style={styles.greeting}>Olá, Mônica</Text>
         <Text style={styles.subtitle}>Visão geral do seu negócio</Text>
       </View>
 
-      {/* KPIs */}
+      <View style={styles.periodSelector}>
+        {periodOptions.map((option) => {
+          const isSelected = selectedPeriod === option.value;
+
+          return (
+            <TouchableOpacity
+              key={option.value}
+              style={[
+                styles.periodButton,
+                isSelected && styles.periodButtonActive,
+              ]}
+              onPress={() => {
+
+  setSelectedPeriod(option.value);
+
+  carregarDadosPainel(option.value);
+
+}}
+              activeOpacity={0.8}
+            >
+              <Text
+                style={[
+                  styles.periodButtonText,
+                  isSelected && styles.periodButtonTextActive,
+                ]}
+              >
+                {option.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
       <View style={styles.kpiGrid}>
-        <View style={styles.kpiCard}>
-          <Ionicons name="cash-outline" size={28} color="#D81B60" />
-          <Text style={styles.kpiValue}>R$ 4.850</Text>
-          <Text style={styles.kpiLabel}>Faturamento</Text>
-        </View>
+        <KpiCard
+          icon={<Ionicons name="calendar-outline" size={26} color="#D81B60" />}
+          value={`${totalAtendimentosAvulsos}`}
+          label="Atendimento avulso"
+          helper="cadastrado na Home"
+        />
 
-        <View style={styles.kpiCard}>
-          <Ionicons name="people-outline" size={28} color="#D81B60" />
-          <Text style={styles.kpiValue}>68</Text>
-          <Text style={styles.kpiLabel}>Clientes</Text>
-        </View>
+        <KpiCard
+          icon={<MaterialCommunityIcons name="package-variant" size={26} color="#5E35B1" />}
+          value={`${totalAtendimentosPacote}`}
+          label="Atendimentos de pacote"
+          helper="sessões em pacotes"
+        />
 
-        <View style={styles.kpiCard}>
-          <MaterialCommunityIcons
-            name="package-variant"
-            size={28}
-            color="#D81B60"
-          />
-          <Text style={styles.kpiValue}>12</Text>
-          <Text style={styles.kpiLabel}>Pacotes Ativos</Text>
-        </View>
+        <KpiCard
+          icon={<Ionicons name="people-outline" size={26} color="#00897B" />}
+          value={`${totalClientes}`}
+          label="Clientes"
+          helper="nomes únicos"
+        />
 
-        <View style={styles.kpiCard}>
-          <Ionicons
-            name="alert-circle-outline"
-            size={28}
-            color="#F57C00"
-          />
-          <Text style={styles.kpiValue}>8%</Text>
-          <Text style={styles.kpiLabel}>Faltas</Text>
-        </View>
+        <KpiCard
+          icon={<Ionicons name="alert-circle-outline" size={26} color="#F57C00" />}
+          value={`${totalFaltas}`}
+          label="Faltas"
+          helper={`faltas registradas`}
+        />
       </View>
-
-      {/* FATURAMENTO VISUAL */}
+{/* 
       <View style={styles.sectionCard}>
-        <Text style={styles.sectionTitle}>Faturamento do mês</Text>
-
-        <Text style={styles.metricLabel}>Meta mensal</Text>
-        <View style={styles.progressBackground}>
-          <View style={[styles.progressFill, { width: '82%' }]} />
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionTitle}>Serviços mais realizados</Text>
+          <Text style={styles.sectionBadge}>
+            {periodOptions.find((option) => option.value === selectedPeriod)?.label}
+          </Text>
         </View>
-        <Text style={styles.metricValue}>82% da meta atingida</Text>
+
+        {topServices.length === 0 ? (
+          <View style={styles.emptyChart}>
+            <MaterialCommunityIcons name="chart-bar" size={30} color="#D81B60" />
+            <Text style={styles.emptyChartText}>Sem dados para montar o gráfico.</Text>
+          </View>
+        ) : (
+          <>
+            <VerticalServicesChart data={topServices} />
+
+            <View style={styles.chartFooter}>
+              <View style={styles.chartLegendItem}>
+                <View style={styles.chartLegendDot} />
+                <Text style={styles.chartLegendText}>Volume de atendimentos</Text>
+              </View>
+              <Text style={styles.chartTotal}>{chartTotal} no total</Text>
+            </View>
+          </>
+        )}
       </View>
 
-      {/* SERVIÇOS */}
       <View style={styles.sectionCard}>
-        <Text style={styles.sectionTitle}>Serviços mais realizados</Text>
+        <Text style={styles.sectionTitle}>Insights do período</Text>
 
-        <View style={styles.serviceRow}>
-          <Text style={styles.serviceLabel}>Alongamento</Text>
-          <View style={styles.smallBarBackground}>
-            <View style={[styles.smallBarFill, { width: '90%' }]} />
+        {insights.map((insight) => (
+          <View key={insight} style={styles.insightRow}>
+            <Ionicons name="checkmark-circle-outline" size={18} color="#00897B" />
+            <Text style={styles.insightText}>{insight}</Text>
           </View>
-        </View>
-
-        <View style={styles.serviceRow}>
-          <Text style={styles.serviceLabel}>Blindagem</Text>
-          <View style={styles.smallBarBackground}>
-            <View style={[styles.smallBarFill, { width: '75%' }]} />
-          </View>
-        </View>
-
-        <View style={styles.serviceRow}>
-          <Text style={styles.serviceLabel}>Pedicure</Text>
-          <View style={styles.smallBarBackground}>
-            <View style={[styles.smallBarFill, { width: '60%' }]} />
-          </View>
-        </View>
-
-        <View style={styles.serviceRow}>
-          <Text style={styles.serviceLabel}>Esmaltação</Text>
-          <View style={styles.smallBarBackground}>
-            <View style={[styles.smallBarFill, { width: '70%' }]} />
-          </View>
-        </View>
+        ))}
       </View>
+ */}
 
-      {/* INSIGHTS */}
-      <View style={styles.sectionCard}>
-        <Text style={styles.sectionTitle}>Insights do mês 📈</Text>
+    <View style={styles.sectionCard}>
+      <Text style={styles.sectionTitle}>
+        Serviços mais realizados
+      </Text>
 
-        <Text style={styles.insightText}>
-          • Serviço mais vendido: Alongamento
-        </Text>
+      <VerticalServicesChart
+        data={servicosMaisRealizados.map((servico, index) => ({
+          name: servico.nome,
+          amount: servico.quantidade,
+          color: serviceColors[index] || '#AD1457',
+        }))}
+      />
 
-        <Text style={styles.insightText}>
-          • Melhor semana: Semana 4
-        </Text>
+       <View style={styles.legendContainer}>
+          {servicosMaisRealizados.map((service, index) => (
+            <View key={index} style={styles.legendItem}>
+              <View
+                style={[
+                  styles.legendColor,
+                  { backgroundColor: serviceColors[index] }
+                ]}
+              />
+              <Text style={styles.legendText}>
+                {service.nome}
+              </Text>
+            </View>
+          ))}
+        </View>
+     </View>
 
-        <Text style={styles.insightText}>
-          • Receita com pacotes: R$ 2.300
-        </Text>
-
-        <Text style={styles.insightText}>
-          • Clientes recorrentes: 72%
-        </Text>
-      </View>
-
-      {/* AÇÕES RÁPIDAS */}
-      <View style={styles.quickActions}>
-        <TouchableOpacity style={styles.actionButton}>
-          <Ionicons name="calendar-outline" size={22} color="#fff" />
-          <Text style={styles.actionText}>Agenda</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.actionButton}>
-          <Ionicons name="people-outline" size={22} color="#fff" />
-          <Text style={styles.actionText}>Clientes</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.actionButton}>
-          <MaterialCommunityIcons
-            name="package-variant"
-            size={22}
-            color="#fff"
-          />
-          <Text style={styles.actionText}>Pacotes</Text>
-        </TouchableOpacity>
-      </View>
+    
+     
+      
     </ScrollView>
+  );
+}
+
+interface KpiCardProps {
+  icon: ReactNode;
+  value: string;
+  label: string;
+  helper: string;
+}
+
+function KpiCard({ icon, value, label, helper }: KpiCardProps) {
+  return (
+    <View style={styles.kpiCard}>
+      {icon}
+      <Text style={styles.kpiValue} numberOfLines={1} adjustsFontSizeToFit>
+        {value}
+      </Text>
+      <Text style={styles.kpiLabel}>{label}</Text>
+      <Text style={styles.kpiHelper}>{helper}</Text>
+    </View>
+  );
+}
+
+function VerticalServicesChart({ data }: { data: ServiceChartItem[] }) {
+  const maxAmount = data.length
+   ? Math.max(...data.map((service) => service.amount))
+   : 1;
+
+  return (
+    <View style={styles.chartArea}>
+      {data.map((service) => {
+        const barHeight = Math.max(Math.round((service.amount / maxAmount) * 100), 12);
+        const barHeightPercent = `${barHeight}%` as `${number}%`;
+
+        return (
+          <View key={service.name} style={styles.chartColumn}>
+            <Text style={styles.serviceAmount}>{service.amount}</Text>
+
+            <View style={styles.chartBarTrack}>
+              <View
+                style={[
+                  styles.chartBarFill,
+                  {
+                    height: barHeightPercent,
+                    backgroundColor: service.color,
+                  },
+                ]}
+              />
+            </View>
+
+            <Text style={styles.serviceLabel} numberOfLines={2}>
+              {nomeCurto(service.name)}
+            </Text>
+          </View>
+        );
+      })}
+    </View>
   );
 }
 
@@ -151,7 +392,7 @@ const styles = StyleSheet.create({
 
   header: {
     marginTop: 30,
-    marginBottom: 24,
+    marginBottom: 18,
   },
 
   greeting: {
@@ -161,9 +402,44 @@ const styles = StyleSheet.create({
   },
 
   subtitle: {
-    fontSize: 18,
+    fontSize: 17,
     color: '#AD1457',
     marginTop: 4,
+  },
+
+  periodSelector: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 5,
+    marginBottom: 18,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+  },
+
+  periodButton: {
+    flex: 1,
+    minHeight: 42,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  periodButtonActive: {
+    backgroundColor: '#D81B60',
+  },
+
+  periodButtonText: {
+    color: '#AD1457',
+    fontWeight: '700',
+    fontSize: 13,
+  },
+
+  periodButtonTextActive: {
+    color: '#FFFFFF',
   },
 
   kpiGrid: {
@@ -174,9 +450,10 @@ const styles = StyleSheet.create({
 
   kpiCard: {
     width: '47%',
+    minHeight: 140,
     backgroundColor: '#fff',
     borderRadius: 18,
-    padding: 18,
+    padding: 16,
     marginBottom: 16,
     alignItems: 'center',
     shadowColor: '#000',
@@ -187,15 +464,25 @@ const styles = StyleSheet.create({
   },
 
   kpiValue: {
+    width: '100%',
     fontSize: 20,
     fontWeight: 'bold',
     marginTop: 8,
     color: '#222',
+    textAlign: 'center',
   },
 
   kpiLabel: {
     fontSize: 14,
-    color: '#666',
+    color: '#555',
+    marginTop: 4,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+
+  kpiHelper: {
+    fontSize: 12,
+    color: '#777',
     marginTop: 4,
     textAlign: 'center',
   },
@@ -212,90 +499,161 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
 
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 14,
+  },
+
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#880E4F',
-    marginBottom: 14,
+    flexShrink: 1,
   },
 
-  metricLabel: {
-    fontSize: 15,
-    color: '#444',
-    marginBottom: 8,
-  },
-
-  metricValue: {
-    marginTop: 8,
-    fontWeight: '600',
-    color: '#D81B60',
-  },
-
-  progressBackground: {
-    width: '100%',
-    height: 14,
+  sectionBadge: {
     backgroundColor: '#FCE4EC',
-    borderRadius: 10,
-    overflow: 'hidden',
+    color: '#AD1457',
+    fontSize: 12,
+    fontWeight: '700',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
   },
 
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#D81B60',
-    borderRadius: 10,
+  chartArea: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    minHeight: 180,
+    gap: 12,
   },
 
-  serviceRow: {
-    marginBottom: 14,
+  chartColumn: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
   },
 
   serviceLabel: {
-    marginBottom: 4,
-    fontSize: 14,
+    fontSize: 11,
     color: '#333',
+    fontWeight: '700',
+    marginTop: 8,
+    minHeight: 30,
+    textAlign: 'center',
   },
 
-  smallBarBackground: {
-    width: '100%',
-    height: 10,
-    backgroundColor: '#FCE4EC',
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-
-  smallBarFill: {
-    height: '100%',
-    backgroundColor: '#EC407A',
-    borderRadius: 8,
-  },
-
-  insightText: {
-    fontSize: 15,
-    color: '#333',
+  serviceAmount: {
+    fontSize: 13,
+    color: '#880E4F',
+    fontWeight: '800',
     marginBottom: 8,
   },
 
-  quickActions: {
+  chartBarTrack: {
+    width: '100%',
+    maxWidth: 48,
+    height: 130,
+    backgroundColor: '#FCE4EC',
+    borderRadius: 14,
+    overflow: 'hidden',
+    justifyContent: 'flex-end',
+  },
+
+  chartBarFill: {
+    width: '100%',
+    borderRadius: 14,
+  },
+
+  chartFooter: {
+    borderTopWidth: 1,
+    borderTopColor: '#F8BBD9',
+    marginTop: 16,
+    paddingTop: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 24,
-    marginBottom: 40,
-  },
-
-  actionButton: {
-    flex: 1,
-    backgroundColor: '#D81B60',
-    marginHorizontal: 4,
-    padding: 14,
-    borderRadius: 14,
-    justifyContent: 'center',
     alignItems: 'center',
+    gap: 10,
   },
 
-  actionText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    marginTop: 6,
-    fontSize: 13,
+  chartLegendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexShrink: 1,
   },
+
+  chartLegendDot: {
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    backgroundColor: '#D81B60',
+  },
+
+  chartLegendText: {
+    fontSize: 12,
+    color: '#666',
+  },
+
+  chartTotal: {
+    fontSize: 12,
+    color: '#880E4F',
+    fontWeight: '700',
+  },
+
+  emptyChart: {
+    minHeight: 160,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFF7FB',
+    borderRadius: 16,
+  },
+
+  emptyChartText: {
+    color: '#777',
+    marginTop: 8,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+
+  insightRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    marginBottom: 10,
+  },
+
+  insightText: {
+    flex: 1,
+    fontSize: 15,
+    color: '#333',
+    lineHeight: 21,
+  },
+
+  legendContainer: {
+    marginTop: 20,
+  },
+
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+
+  legendColor: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginRight: 8,
+  },
+
+  legendText: {
+    fontSize: 13,
+    color: '#333',
+  },
+
 });

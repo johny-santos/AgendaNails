@@ -17,6 +17,8 @@ import { useCallback } from 'react';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import { HomeStackParamList } from '../../routes/home.stack';
+import { useAuth } from '../../contexts/AuthContext';
+
 
 type NavigationProps = NativeStackNavigationProp<HomeStackParamList, 'HomeMain'>;
 
@@ -41,8 +43,11 @@ interface Atendimento {
   // adicione outras propriedades conforme API retorna
 }
 
-
 const navigation = useNavigation<NavigationProps>();
+
+const { user } = useAuth();
+
+console.log(user);
 
   const [showPicker, setShowPicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -50,12 +55,20 @@ const navigation = useNavigation<NavigationProps>();
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [loading, setLoading] = useState(true);
 
-  
     async function carregarAtendimentos() {
       try{
         const [resAtendimentos, resClientes] = await Promise.all([
-          fetch(`${API_URL}/atendimentos`),
-          fetch(`${API_URL}/clientes`)
+          fetch(`${API_URL}/atendimentos`, {
+            headers:{
+              Authorization: `Bearer ${user?.token}`
+            }
+          }),
+
+          fetch(`${API_URL}/clientes`, {
+            headers:{
+              Authorization: `Bearer ${user?.token}`
+            }
+          })
         ]);
 
         const atendimentosData = await resAtendimentos.json();
@@ -92,8 +105,25 @@ const navigation = useNavigation<NavigationProps>();
   };
 
   function formatarData(data: string){
-    return new Date(data).toLocaleDateString('pt-BR');
+
+    const [ano, mes, dia] = data.split('-');
+
+    return `${dia}/${mes}/${ano}`;
+
   }
+
+  const atendimentosFiltrados = atendimentos.filter((item) => {
+
+  const [ano, mes, dia] = item.data_atendimento.split('-');
+
+  const dataBanco = `${dia}/${mes}/${ano}`;
+
+  return (
+    dataBanco === selectedDate.toLocaleDateString('pt-BR')
+  );
+
+});
+
 
 
   return (
@@ -161,8 +191,29 @@ const navigation = useNavigation<NavigationProps>();
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Atendimentos agendados</Text>
         </View>
+        {atendimentosFiltrados.length === 0 && (
 
-        {atendimentos.map((item: any) => {
+          <View style={styles.emptyContainer}>
+
+            <Ionicons
+              name="calendar-outline"
+              size={60}
+              color="#999"
+            />
+
+            <Text style={styles.emptyTitle}>
+              Nenhum atendimento encontrado
+            </Text>
+
+            <Text style={styles.emptyText}>
+              Não existem atendimentos agendados para esta data. Você pode agendar quando quiser na tela "novo atendimento".
+            </Text>
+
+          </View>
+
+        )}
+
+        {atendimentosFiltrados.map((item: any) => {
           const cliente = clientes.find(
           (c) => c.id_cliente === item.fk_cliente_id
         );
@@ -295,5 +346,29 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
   },
+
+  emptyContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 30,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#555',
+    textAlign: 'center',
+    marginTop: 12,
+  },
+
+  emptyText: {
+    fontSize: 14,
+    color: '#777',
+    textAlign: 'center',
+    marginTop: 8,
+  },
+
 });
 

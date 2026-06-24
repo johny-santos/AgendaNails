@@ -1,4 +1,5 @@
 import React from 'react';
+import { useState, useEffect } from 'react';
 import {
  View,
  Text,
@@ -11,6 +12,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { PackagesStackParamList } from '../../routes/packages.stack';
 import PackageCard from '../../components/PackageCard';
+import { API_URL } from '../../services/api';
 
 type NavigationProps = NativeStackNavigationProp<
   PackagesStackParamList,
@@ -18,7 +20,65 @@ type NavigationProps = NativeStackNavigationProp<
 >;
 
 export default function Packages() {
+
+interface Package {
+  id_pacote: number,
+  nome_cliente: string;
+  horario_inicio_pacote: string;
+  data_inicio_pacote: string;
+  valor_com_desconto: string;
+  valor_bruto: string;
+  status: string;
+  num_sessoes: number;
+  sessoes_concluidas: number;
+  sessoes_restantes: number;
+};
+
   const navigation = useNavigation<NavigationProps>();
+
+  const [ packages, setPackages ] = useState<Package[]>([]);
+  const [ loading, setLoading ] = useState(true);
+  //const [pacotes, setPacotes] = useState([]);
+
+  useEffect(() => {
+    async function loadPackages(){
+      try{
+        const response = await fetch(`${API_URL}/pacote`);
+
+        const data = await response.json();
+
+        console.log(data);
+
+        setPackages(data);
+
+      }catch(error){
+        console.log(
+          'Erro ao carregar os pacotes:', error
+        )
+      } finally{
+        setLoading(false);
+      }
+    }
+
+    loadPackages();  
+
+  }, [])
+
+  if(loading){
+    return (
+      <Text>
+        Carregando pacotes ...
+      </Text>
+    );
+  }
+
+  const totalPacotes = packages.length;
+
+  const pacotesConcluidos = packages.filter(
+    (item: any) => item.status_pacote === 'CONCLUÍDO'
+  ).length;
+
+
 
   return (
     <View style={styles.container}>
@@ -37,14 +97,14 @@ export default function Packages() {
   {/* Resumo */}
     <View style={styles.summaryCard}>
     <View style={styles.summaryItem}>
-      <Text style={styles.summaryNumber}>12</Text>
+      <Text style={styles.summaryNumber}>{totalPacotes}</Text>
       <Text style={styles.summaryLabel}>Ativos</Text>
     </View>
 
     <View style={styles.summaryDivider} />
 
     <View style={styles.summaryItem}>
-        <Text style={styles.summaryNumber}>4</Text>
+        <Text style={styles.summaryNumber}>{pacotesConcluidos || 0}</Text>
         <Text style={styles.summaryLabel}>Finalizados</Text>
      </View>
 
@@ -59,27 +119,27 @@ export default function Packages() {
   {/* Lista */}
    <Text style={styles.sectionTitle}>Pacotes em aberto:</Text>
 
-   <PackageCard
-      name="Sabrina Sato"
-      startDate="22/11/2025"
-      service="Manicure Premium"
-      price="R$ 180,00"
-      remainingSessions={2}
-      totalSessions={4}
-      completedSessions={2}
-      observations="2 sessões restantes"
-    />
+    {packages.map(pkg => (
+      <PackageCard
+        key={pkg.id_pacote}
+        name={pkg.nome_cliente}
+        time={pkg.horario_inicio_pacote}
+        startDate={
+          new Date(
+            pkg.data_inicio_pacote
+          ).toLocaleDateString('pt-BR')
+        }
+        service="Pacote"
+        price={`R$ ${pkg.valor_com_desconto}`}
+        totalPrice={`R$ ${pkg.valor_bruto}`}
+        remainingSessions={pkg.sessoes_restantes}
+        totalSessions={pkg.num_sessoes}
+        completedSessions={pkg.sessoes_concluidas}
+        observations={`${pkg.sessoes_restantes} sessões restantes.`}
+      />
 
-   <PackageCard
-      name="Fernanda Lima"
-      startDate="18/11/2025"
-      service="Blindagem Premium"
-      price="R$ 240,00"
-      remainingSessions={1}
-      totalSessions={4}
-      completedSessions={3}
-      observations="Última sessão pendente"
-     />
+    ))}
+
    </ScrollView>
 
 {/* Botão flutuante */}

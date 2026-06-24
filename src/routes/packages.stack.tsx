@@ -10,7 +10,13 @@ export type PackagesStackParamList = {
   PackageDetails: {
     name: string;
     time: string;
+    startDate: string;
     service: string;
+    price: string;
+    totalPrice: string;
+    remainingSessions: number;
+    totalSessions: number;
+    completedSessions: number;
     observations?: string;
   };
 };

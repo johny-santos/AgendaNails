@@ -112,6 +112,11 @@ export default function NewClient() {
   
   async function handleCreateAppointment() {
     try {
+      /* console.log("SelectedDate: ", selectedDate);
+      console.log(
+        "data enviada:",
+        selectedDate.toISOString().split("T")[0]
+      ); */
       const response = await fetch(`${API_URL}/agendamentoCompleto`, {
         method: 'POST',
         headers: {

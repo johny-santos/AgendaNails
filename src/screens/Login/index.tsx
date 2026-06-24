@@ -8,49 +8,93 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../routes/auth.stack';
+import axios from 'axios';
+//import apiService from '../../services/apiService';
+import { API_URL } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 
 type NavigationProps = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
 
 export default function Login() {
   const navigation = useNavigation<NavigationProps>();
-  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [carregando, setCarregando] = useState(false);
+  const { login } = useAuth();
 
+  // ── Handler para fazer login ──
   const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert('Erro', 'Por favor, preencha todos os campos');
+
+  if (!email || !password) {
+    Alert.alert(
+      'Erro',
+      'Informe email e senha'
+    );
+    return;
+  }
+
+  try {
+
+    setCarregando(true);
+
+    const response = await fetch(
+      `${API_URL}/login`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          senha: password,
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    console.log(data);
+
+    if (!response.ok) {
+      Alert.alert(
+        'Erro',
+        data.erro || 'Falha no login'
+      );
       return;
     }
 
-    setLoading(true);
-    try {
-      await login(email, password);
-    } catch (error) {
-      Alert.alert('Erro de login', 'E-mail ou senha inválidos');
-    } finally {
-      setLoading(false);
-    }
-  };
+    await login(email, password);
+
+  } catch (error) {
+
+    console.log(error);
+
+    Alert.alert(
+      'Erro',
+      'Não foi possível conectar ao servidor'
+    );
+
+  } finally {
+
+    setCarregando(false);
+
+  }
+};
 
   return (
     <KeyboardAvoidingView
       style={styles.keyboardView}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScrollView contentContainerStyle={styles.scrollContainer}
-      keyboardShouldPersistTaps='handled'
-      >
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.container}>
 
           {/* Logo / Título */}
@@ -106,13 +150,13 @@ export default function Login() {
             </TouchableOpacity>
 
             {/* Botão Entrar */}
-            <TouchableOpacity 
-              style={styles.loginButton}
+            <TouchableOpacity
+              style={[styles.loginButton, carregando && styles.buttonDisabled]}
               onPress={handleLogin}
-              disabled={loading}
+              disabled={carregando}
             >
-              {loading ? (
-                <ActivityIndicator color="#FFF" />
+              {carregando ? (
+                <ActivityIndicator color="#FFF" size="small" />
               ) : (
                 <Text style={styles.loginButtonText}>Entrar</Text>
               )}
@@ -126,6 +170,19 @@ export default function Login() {
               <Text style={styles.footerLink}>Cadastre-se</Text>
             </TouchableOpacity>
           </View>
+
+          {/* Botão temporário para testes */}
+          <TouchableOpacity
+            style={styles.skipButton}
+            onPress={() =>
+              navigation.getParent()?.reset({
+                index: 0,
+                routes: [{ name: 'MainTabs' as never }],
+              })
+            }
+          >
+            <Text style={styles.skipText}>⚙️ Pular login (Dev)</Text>
+          </TouchableOpacity>
 
         </View>
       </ScrollView>
@@ -143,7 +200,6 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     paddingVertical: 40,
-    paddingBottom: 100
   },
 
   container: {
@@ -242,6 +298,10 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+
+  buttonDisabled: {
+    opacity: 0.6,
   },
 
   footer: {

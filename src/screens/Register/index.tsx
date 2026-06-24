@@ -11,8 +11,8 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 
 // Ícones da biblioteca Expo
@@ -22,7 +22,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../routes/auth.stack';
-import { useAuth } from '../../contexts/AuthContext';
+import { API_URL } from '../../services/api';
+// Serviço de API
+//import apiService from '../../services/apiService';
+//import { useAuth } from '../../contexts/AuthContext';
+
 
 // Tipagem da navegação para a tela de Cadastro
 type NavigationProps = NativeStackNavigationProp<AuthStackParamList, 'Register'>;
@@ -30,8 +34,7 @@ type NavigationProps = NativeStackNavigationProp<AuthStackParamList, 'Register'>
 export default function Register() {
   // Hook de navegação tipado
   const navigation = useNavigation<NavigationProps>();
-  const { register } = useAuth();
-
+  //const { register } = useAuth();
   // Estados dos campos do formulário
   const [name, setName] = useState('');             // Nome completo
   const [email, setEmail] = useState('');           // E-mail
@@ -41,11 +44,15 @@ export default function Register() {
   // Controla visibilidade da senha e confirmação
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [loading, setLoading] = useState(false);
 
-  const handleRegister = async () => {
+  // Estado de carregamento
+  const [carregando, setCarregando] = useState(false);
+
+  // ── Handler para fazer cadastro ──
+  const handleRegistrar = async () => {
+
     if (!name || !email || !password || !confirmPassword) {
-      Alert.alert('Erro', 'Por favor, preencha todos os campos devidamente!');
+      Alert.alert('Erro', 'Todos os campos são obrigatórios');
       return;
     }
 
@@ -59,13 +66,53 @@ export default function Register() {
       return;
     }
 
-    setLoading(true);
     try {
-      await register(name, email, password);
+
+      setCarregando(true);
+
+      const response = await fetch(
+        `${API_URL}/registrar`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            nome_profissional: name,
+            email_profissional: email,
+            senha: password,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      console.log(data);
+
+      if (!response.ok) {
+        throw new Error(data.erro || 'Erro ao cadastrar, tente novamente depois.')
+      }
+
+      Alert.alert(
+        'Sucesso',
+        'Cadastro realizado com sucesso'
+      );
+
+      navigation.goBack();
+
     } catch (error) {
-      Alert.alert('Erro de registro', 'Não foi possível criar a conta');
+
+      console.log(error);
+
+      Alert.alert(
+        'Erro',
+        'Não foi possível conectar ao servidor'
+      );
+
     } finally {
-      setLoading(false);
+
+      setCarregando(false);
+
     }
   };
 
@@ -73,12 +120,9 @@ export default function Register() {
     // Evita que o teclado sobreponha os inputs no iOS
     <KeyboardAvoidingView
       style={styles.keyboardView}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScrollView contentContainerStyle={styles.scrollContainer}
-        keyboardShouldPersistTaps='handled'
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.container}>
 
           {/* ── Logo / Título ── */}
@@ -166,13 +210,13 @@ export default function Register() {
             </View>
 
             {/* Botão principal: Criar conta */}
-            <TouchableOpacity 
-              style={styles.registerButton}
-              onPress={handleRegister}
-              disabled={loading}
+            <TouchableOpacity
+              style={[styles.registerButton, carregando && styles.buttonDisabled]}
+              onPress={handleRegistrar}
+              disabled={carregando}
             >
-              {loading ? (
-                <ActivityIndicator color="#FFF" />
+              {carregando ? (
+                <ActivityIndicator color="#FFF" size="small" />
               ) : (
                 <Text style={styles.registerButtonText}>Criar conta</Text>
               )}
@@ -209,7 +253,6 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     paddingVertical: 40,
-    paddingBottom: 180
   },
 
   // Padding lateral do conteúdo
@@ -310,6 +353,11 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+
+  // Estado desabilitado do botão (carregando)
+  buttonDisabled: {
+    opacity: 0.6,
   },
 
   // Linha do rodapé com "Já tem conta? Entrar"
