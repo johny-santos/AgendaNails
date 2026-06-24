@@ -4,10 +4,18 @@ import { useRoute } from '@react-navigation/native';
 
 export default function PackageDetails() {
   const route = useRoute();
-  const { name, time, service, observations } = route.params as any;
+  const {  
+    name,
+    time,
+    startDate,
+    service,
+    price,
+    totalPrice,
+    remainingSessions,
+    totalSessions,
+    completedSessions,
+    observations, } = route.params as any;
 
-  const completedSessions = 2;
-  const totalSessions = 4;
   const progress = (completedSessions / totalSessions) * 100;
 
   return (
@@ -26,6 +34,11 @@ export default function PackageDetails() {
           <Text style={styles.infoText}>Nome: {name}</Text>
         </View>
 
+         <View style={styles.infoRow}>
+          <Ionicons name="time-outline" size={20} color="#E91E63" />
+          <Text style={styles.infoText}>Data início pacote: {startDate}</Text>
+        </View>
+
         <View style={styles.infoRow}>
           <Ionicons name="time-outline" size={20} color="#E91E63" />
           <Text style={styles.infoText}>Horário: {time}</Text>
@@ -34,6 +47,16 @@ export default function PackageDetails() {
         <View style={styles.infoRow}>
           <MaterialCommunityIcons name="nail" size={20} color="#E91E63" />
           <Text style={styles.infoText}>Serviço: {service}</Text>
+        </View>
+
+         <View style={styles.infoRow}>
+          <MaterialCommunityIcons name="cash" size={20} color="#E91E63" />
+          <Text style={styles.infoText}>Valor bruto: {totalPrice}</Text>
+        </View>
+
+        <View style={styles.infoRow}>
+          <MaterialCommunityIcons name="cash" size={20} color="#E91E63" />
+          <Text style={styles.infoText}>Valor com desconto (10%): {price}</Text>
         </View>
 
         <View style={styles.infoRow}>

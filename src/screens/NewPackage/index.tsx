@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,38 +11,130 @@ import {
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
-
+import { API_URL } from '../../services/api';
+import { Service } from '../../types/Service';
+import Decimal from 'decimal.js';
 import MultiSelectServices from '../../components/MultiSelectServices';
 import TimeDropdown from '../../components/TimeDropdown';
+import ClientDropdown from '../../components/ClientDropdown';
+import { Alert } from 'react-native';
+
+
 
 export default function NewPackage() {
+
+interface PackageSession {
+  sessionNumber: number;
+  services: number[];
+}
+
+interface Client {
+  id_cliente: number;
+  nome_cliente: string;
+}
+  const [packageSessions, setPackageSessions] =
+    useState<PackageSession[]>([
+      { sessionNumber: 1, services: [] },
+      { sessionNumber: 2, services: [] },
+      { sessionNumber: 3, services: [] },
+      { sessionNumber: 4, services: [] }
+    ]);  
+  const [services, setServices] = useState<Service[]>([]);  
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [showPicker, setShowPicker] = useState<boolean>(false);
 
-  const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  //const [selectedServices, setSelectedServices] = useState<number[]>([]);
   const [selectedStartTime, setSelectedStartTime] = useState<string>('');
+  const [totalToPay, setTotalToPay] = useState<Decimal>(new Decimal(0));
+  const totalWithDiscount = totalToPay.mul(0.90)
+  const [loading, setLoading] = useState(true);
+  const [client, setClient] = useState<Client[]>([]);
+  const [selectClientById, setSelectClientById] = useState<number | null >(null);
+  const [datePackageAppointment, setDatePackageAppointment] = useState<Date>(new Date());
+  const [packageAppointmentTime, setPackageAppointmentTime] = useState<string>('');
+  
+  useEffect(() => {
+  const selectedIds = packageSessions.flatMap(
+    session => session.services
+  );
 
-  const servicesList: string[] = [
-    'Manicure',
-    'Pedicure',
-    'Blindagem',
-    'Banho de gel',
-    'Alongamento em fibra',
-    'Alongamento em gel',
-    'Esmaltação em gel',
-    'Spa dos pés',
-    'Cuticulagem',
-    'Francesinha',
-    'Encapsulada',
-    'Decoração simples',
-    'Manutenção',
-    'Remoção',
-  ];
+  const total = services
+    .filter(service =>
+      selectedIds.includes(service.id_servico)
+    )
+    .reduce(
+      (acc, service) =>
+        acc.plus(new Decimal(service.valor_base)),
+      new Decimal(0)
+    );
+
+   
+  setTotalToPay(total);
+}, [packageSessions, services]);
+
+useEffect(() => {
+  console.log('Cliente selecionado:', selectClientById);
+}, [selectClientById]);
+
+      const handleSessionServicesChange = (
+        sessionIndex: number,
+        selectedIds: number[]
+      ) => {
+        setPackageSessions(prev =>
+          prev.map((session, index) =>
+            index === sessionIndex
+              ? { ...session, services: selectedIds }
+              : session
+          )
+        );
+      }; 
+      
+  
+       useEffect(() => {
+          async function carregarServicosDropDown() {
+            try{
+              const [resServices, resClientes] = await Promise.all([
+                fetch(`${API_URL}/servicos`),
+                fetch(`${API_URL}/clientes`)
+              ]);
+      
+              const servicosData = await resServices.json();
+              const clientesData = await resClientes.json()
+      
+              setServices(servicosData);
+              setClient(clientesData)
+
+      
+            } catch(error){
+              console.log("Erro ao carregar dados: ", error);
+      
+            } finally {
+              setLoading(false);
+      
+            }
+          }
+      
+          carregarServicosDropDown();
+      
+        }, []);
+      
+        if(loading){
+          return <Text>Carregando serviços e clientes...</Text>;
+        }
+  
 
   const packageTimes: string[] = [];
-  for (let hour = 8; hour <= 19; hour++) {
-    packageTimes.push(`${hour.toString().padStart(2, '0')}:00`);
-  }
+
+    for (let hour = 8; hour <= 19; hour++) {
+        for (let minute = 0; minute < 60; minute += 15) {
+            if (hour === 19 && minute > 0) break;
+
+        packageTimes.push(
+         `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`
+        );
+     }
+    }
+
 
   const chosenDate = (event: any, date?: Date): void => {
     setShowPicker(false);
@@ -51,6 +143,68 @@ export default function NewPackage() {
       setSelectedDate(date);
     }
   };
+
+  console.log(selectedDate);
+
+  console.log(
+  selectedDate.toLocaleDateString('pt-BR')
+);
+
+  async function handleCreatePackage(){
+    try{
+      const payload = {
+        id_cliente: selectClientById,
+
+        data_inicio_pacote: selectedDate,
+
+        horario_inicio: selectedStartTime,
+
+        servicos1: packageSessions[0].services[0],
+
+        servicos2: packageSessions[1].services[0],
+
+        servicos3: packageSessions[2].services[0],
+
+        servicos4: packageSessions[3].services[0],
+      };
+
+      const response = await fetch(`${API_URL}/pacote`,{
+        method: "POST",
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+       Alert.alert(
+        "Sucesso",
+        "Pacote criado com sucesso!");
+
+        setSelectClientById(null);
+
+        setSelectedStartTime('');
+
+        setSelectedDate(new Date());
+
+        setPackageSessions([
+          { sessionNumber: 1, services: [] },
+          { sessionNumber: 2, services: [] },
+          { sessionNumber: 3, services: [] },
+          { sessionNumber: 4, services: [] }
+        ]);
+      }
+
+
+    }catch(error){
+      console.log(error)
+    }
+  }
+
+  
 
   return (
     <KeyboardAvoidingView
@@ -64,27 +218,19 @@ export default function NewPackage() {
       >
         {/* Header */}
         <View style={styles.headerContainer}>
-          <Text style={styles.headerTitle}>Novo Pacote</Text>
-          <Text style={styles.headerSubtitle}>
+          <Text style={styles.headerTitle}> Organize clientes recorrentes com facilidade</Text>
+         {/*  <Text style={styles.headerSubtitle}>
             Organize clientes recorrentes com facilidade
-          </Text>
+          </Text> */}
         </View>
 
         {/* Nome Cliente */}
-        <View style={styles.labelTextContainer}>
-          <Text style={styles.labelsText}>Nome da Cliente</Text>
-        </View>
-
-        <View style={styles.textInputContainer}>
-          <View style={styles.inputWrapper}>
-            <Ionicons name="person-outline" size={20} color="#a0006d" />
-            <TextInput
-              style={styles.inputText}
-              placeholder="Digite o nome da cliente"
-              placeholderTextColor="#999"
-            />
-          </View>
-        </View>
+     <ClientDropdown
+        label="Selecione a cliente"
+        clients={client}
+        selectedValue={selectClientById}
+        onSelect={setSelectClientById}
+      />
 
         {/* Data início */}
         <View style={styles.labelTextContainer}>
@@ -121,32 +267,89 @@ export default function NewPackage() {
           onSelect={setSelectedStartTime}
         />
 
-        {/* Serviços */}
-        <MultiSelectServices
-          services={servicesList}
-          selectedServices={selectedServices}
-          onSelectionChange={setSelectedServices}
-        />
+        {packageSessions.map((session, index) => (
+        <View key={session.sessionNumber}>
+         <View
+          style={{
+            marginTop: 20,
+            marginLeft: 15,
+            alignSelf: 'flex-start',
+            backgroundColor: '#f50958',
+            paddingHorizontal: 14,
+            paddingVertical: 8,
+            borderRadius: 20,
+          }}
+        >
+          <Text
+            style={{
+              color: '#fff',
+              fontWeight: 'bold',
+              fontSize: 15,
+            }}
+          >
+            Sessão {session.sessionNumber}
+          </Text>
+        </View>
 
-        {/* Desconto */}
+          <MultiSelectServices
+            services={services}
+            selectedServices={session.services}
+            onSelectionChange={(ids) =>
+              handleSessionServicesChange(index, ids)
+            }
+          />
+        </View>
+      ))}
+        
+        
         <View style={styles.labelTextContainer}>
-          <Text style={styles.labelsText}>Desconto do pacote</Text>
+          <Text style={styles.labelsText}>Valor bruto do pacote</Text>
         </View>
 
-        <View style={styles.textInputContainer}>
-          <View style={styles.inputWrapper}>
-            <Ionicons name="cash-outline" size={20} color="#a0006d" />
-            <TextInput
-              style={styles.inputText}
-              placeholder="Digite o valor do desconto"
-              placeholderTextColor="#999"
-              keyboardType="numeric"
-            />
-          </View>
+        <View style={styles.inputWrapper}>
+          <Ionicons
+            name="cash-outline"
+            size={20}
+            color="#a0006d"
+          />
+
+          <Text
+            style={{
+              marginLeft: 10,
+              fontSize: 16,
+              color: '#333'
+            }}
+          >
+            R$ {totalToPay.toFixed(2)}
+          </Text>
         </View>
 
+         {/* Desconto */}
+        <View style={styles.labelTextContainer}>
+          <Text style={styles.labelsText}>Valor com desconto (10%)</Text>
+        </View>
+
+        <View style={styles.inputWrapper}>
+          <Ionicons
+            name="pricetag-outline"
+            size={20}
+            color="#a0006d"
+          />
+
+          <Text
+            style={{
+              marginLeft: 10,
+              fontSize: 16,
+              color: '#333'
+            }}
+          >
+            R$ {totalWithDiscount.toFixed(2)}
+          </Text>
+        </View>
+
+       
         {/* Observação */}
-        <View style={styles.labelTextContainer}>
+      {/*   <View style={styles.labelTextContainer}>
           <Text style={styles.labelsText}>Observação do pacote</Text>
         </View>
 
@@ -157,12 +360,13 @@ export default function NewPackage() {
             placeholder="Digite observações importantes..."
             placeholderTextColor="#999"
           />
-        </View>
+        </View> */}
 
         {/* Botão */}
         <TouchableOpacity
           style={styles.buttonToucha}
           activeOpacity={0.85}
+          onPress={handleCreatePackage}
         >
           <Ionicons name="gift-outline" size={22} color="#fff" />
           <Text style={styles.userConfirm}>Criar Pacote</Text>
@@ -184,15 +388,15 @@ const styles = StyleSheet.create({
   },
 
   headerContainer: {
-    paddingTop: 50,
+    paddingTop: 44,
     paddingHorizontal: 22,
-    marginBottom: 20,
+    marginBottom: 18,
   },
 
   headerTitle: {
-    fontSize: 30,
+    fontSize: 25,
     fontWeight: 'bold',
-    color: '#fff',
+    color: '#f8eaea',
   },
 
   headerSubtitle: {
@@ -216,7 +420,15 @@ const styles = StyleSheet.create({
   textInputContainer: {
     marginLeft: 12,
   },
-
+  dropdownButton: {
+    minHeight: 58,
+    backgroundColor: '#fff',
+    borderWidth: 3,
+    borderColor: '#d81b60',
+    borderRadius: 12,
+    justifyContent: 'center',
+    paddingHorizontal: 14,
+  },
   inputWrapper: {
     width: '95%',
     backgroundColor: '#fff',

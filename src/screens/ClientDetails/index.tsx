@@ -3,15 +3,28 @@ import {
   Text, 
   StyleSheet, 
   TouchableOpacity, 
-  ScrollView 
+  ScrollView,
+  Alert,
+  Modal,
+  TextInput 
 } from 'react-native';
 import { useState, useEffect } from 'react';
-import { useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { API_URL } from '../../services/api';
 
 
 export default function ClientDetails() {
+
+  interface AtendimentoDetalhes{
+    id_atendimento: number;
+    data_atendimento: string;
+    horario_inicio: string;
+    horario_fim: string;
+    observacao: string;
+    valor_final: string;
+    status: string;
+  }
 
   interface Atendimentos_servicos{
     id_atendimento_servico: number,
@@ -29,6 +42,7 @@ export default function ClientDetails() {
   }
 
   const route = useRoute();
+  const navigation = useNavigation();
 
   const { 
     id_atendimento,
@@ -42,7 +56,13 @@ export default function ClientDetails() {
   } = route.params as any;
 
   const [atendimento_servicos, setAtendimento_servicos] = useState<Atendimentos_servicos[]>([]);
-
+  const [modalEditarVisible, setModalEditarVisible] = useState(false);
+  const [atendimento, setAtendimento] = useState<AtendimentoDetalhes | null>(null);
+  const [dataAtendimento, setDataAtendimento] = useState('');
+  const [horarioInicio, setHorarioInicio] = useState('');
+  const [horarioFim, setHorarioFim] = useState('');
+  const [observacao, setObservacao] = useState('');
+  const [valorFinal, setValorFinal] = useState('');
 
   async function listarAtendimentosPorCliente(){
     try {
@@ -61,11 +81,212 @@ export default function ClientDetails() {
     }
   } 
 
+  async function buscarAtendimentoPorId(){
+    try{
+      const response = await fetch(
+        `${API_URL}/atendimentos/${id_atendimento}`
+      );
+
+      const data = await response.json();
+
+      setAtendimento(data);
+
+    } catch(error){
+        console.log("Erro ao buscar atendimento: ", error);
+    }
+  }
+
   useEffect(() => {
     listarAtendimentosPorCliente();
+    buscarAtendimentoPorId();
   }, [])
 
-  
+  useEffect(() => {
+    if(!atendimento) return;
+
+    setDataAtendimento(
+      formatarData(atendimento.data_atendimento)
+    );
+    setHorarioInicio(
+      formatarHorario(atendimento.horario_inicio)
+    );
+    setHorarioFim(
+      formatarHorario(atendimento.horario_fim)
+    );
+    setObservacao(atendimento.observacao || '');
+   
+    setValorFinal(
+     formatarValorBrasileiro(atendimento.valor_final)
+    );
+
+  }, [atendimento]);
+
+  useEffect(() => {
+    console.log("ATENDIMENTO:", atendimento);
+  }, [atendimento]);
+
+    async function alterarStatusAtendimentos(novoStatus: string){
+      try{
+        const response = await fetch(
+          `${API_URL}/atendimentos/${id_atendimento}`,
+          {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              status: novoStatus
+            })
+          }
+        );
+
+        const data = await response.json();
+
+        Alert.alert(
+          'Sucesso!',
+          `Atendimento atualizado para o status ${novoStatus}`
+        );
+
+        console.log(data);
+
+      } catch(error){
+          console.log(error)
+
+          Alert.alert(
+            'Erro',
+            'Não foi possível atualizar o atendimento...'
+          );
+      }
+    }
+
+    function confirmarExclusaoAtendimento(){
+      Alert.alert(
+        'Excluir atendimento',
+        'Você tem certeza que deseja excluir esse atendimento? Essa ação não pode ser desfeita.',
+        [
+          {
+            text: 'Cancelar',
+            style: 'cancel'
+          },
+          {
+            text: 'Excluir',
+            style: 'destructive',
+            onPress: () => deletarAtendimentoCliente()
+          }          
+        ]
+      )
+    }
+
+   async function deletarAtendimentoCliente(){
+    try{
+
+      const response = await fetch(
+        `${API_URL}/atendimentos/${id_atendimento}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+        }
+      )
+     
+      const data = await response.json();
+
+      console.log("3 - json ok", data)
+
+      Alert.alert(
+        'Sucesso!',
+        'Atendimento excluído com sucesso!',
+        [
+          {
+            text: 'OK',
+            onPress: () => navigation.goBack()
+          }
+        ]
+      )
+      
+    } catch(error){
+
+      console.log("ERRO DELETE COMPLETO:", error)
+
+      Alert.alert(
+        'Erro',
+        'Não foi possível fazer a exclusão do atendimento'
+      )
+
+    }
+  }
+
+  async function atualizarAtendimento(){
+    try{
+      console.log("Data Enviada: ", formatarDataBanco(dataAtendimento));
+      const response = await fetch(
+        `${API_URL}/atendimentos/${id_atendimento}`,
+        
+        {
+          method: 'PUT',
+          headers: {
+              'Content-Type': 'application/json'
+          },
+          body : JSON.stringify({
+            data_atendimento: formatarDataBanco(dataAtendimento),
+            horario_inicio: horarioInicio,
+            horario_fim: horarioFim,
+          //  valor_final: valorFinal,        
+            observacao,
+          })
+        }
+      );
+
+      const data = await response.json();
+
+      console.log('UPDATE: ', data);
+
+      Alert.alert(
+        "Sucesso!",
+        "Atendimento atualizado!",
+        [
+          {
+            text: "OK",
+            onPress: () => {
+              setModalEditarVisible(false);
+              buscarAtendimentoPorId();
+            }
+          }
+        ]
+      )
+
+    } catch(error){
+        console.log(
+          "Erro no UPDATE: ",
+          error);
+
+        Alert.alert(
+          "Erro",
+          "Não foi possível atualizar"
+        );
+    }
+  } 
+
+  function formatarData(data: string){
+    const[ano, mes, dia] = data.split('-');
+
+    return `${dia}/${mes}/${ano}`;
+  }
+
+  function formatarDataBanco(data: string){
+    const [dia, mes, ano] = data.split('/');
+
+    return `${ano}-${mes}-${dia}`;
+  }
+
+  function formatarHorario(horario: string){
+    return horario.slice(0,5);
+  }
+
+  function formatarValorBrasileiro(valor: string){
+    return valor.replace('.', ',');
+  }
 
   return (
 
@@ -76,7 +297,7 @@ export default function ClientDetails() {
         <Text style={styles.headerTitle}>{name}</Text>
 
         <View style={styles.statusBadge}>
-          <Text style={styles.statusText}>{status}</Text>
+          <Text style={styles.statusText}>{atendimento?.status || status}</Text>
         </View>
       </View>
 
@@ -87,12 +308,22 @@ export default function ClientDetails() {
 
         <View style={styles.infoRow}>
           <Ionicons name="calendar-outline" size={20} color="#d81b60" />
-          <Text style={styles.infoText}>Data: {dateAppointment}</Text>
+          <Text style={styles.infoText}>
+            Data: {
+              atendimento
+              ? formatarData(atendimento.data_atendimento)
+              : dateAppointment
+            }</Text>
         </View>
 
         <View style={styles.infoRow}>
           <Ionicons name="time-outline" size={20} color="#d81b60" />
-          <Text style={styles.infoText}>Horário: {time}</Text>
+          <Text style={styles.infoText}>
+            Horário: {
+              atendimento
+              ? `${formatarHorario(atendimento.horario_inicio)} - ${formatarHorario(atendimento.horario_fim)}`
+              : time    
+            }</Text>
         </View>
 
         <View style={styles.infoRow}>
@@ -135,7 +366,11 @@ export default function ClientDetails() {
         <Text style={styles.sectionTitle}>💰 Valor Total</Text>
 
         <Text style={styles.totalText}>
-          R$ {total}
+          R$ {
+          atendimento
+          ? formatarValorBrasileiro(atendimento?.valor_final) 
+          : total
+          }
         </Text>
 
       </View>
@@ -146,7 +381,7 @@ export default function ClientDetails() {
         <Text style={styles.sectionTitle}>📝 Observações</Text>
 
         <Text style={styles.descriptionText}>
-          {description || 'Nenhuma observação adicionada.'}
+          {atendimento?.observacao || 'Nenhuma observação adicionada.'}
         </Text>
 
       </View>
@@ -154,15 +389,26 @@ export default function ClientDetails() {
       {/* BOTÕES STATUS */}
       <View style={styles.actionsContainer}>
 
-        <TouchableOpacity style={styles.successButton}>
-          <Text style={styles.buttonText}>Cliente Compareceu</Text>
+        <TouchableOpacity
+          style={styles.successButton}
+          onPress={() => alterarStatusAtendimentos('REALIZADO')}
+        >
+          <Text style={styles.buttonText}>
+            Cliente Compareceu
+          </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.warningButton}>
-          <Text style={styles.buttonText}>Reagendar</Text>
+        <TouchableOpacity 
+          style={styles.warningButton}
+          onPress={() => setModalEditarVisible(true)}
+          >
+          <Text style={styles.buttonText}>Editar</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.dangerButton}>
+        <TouchableOpacity 
+          style={styles.dangerButton}
+          onPress={() => alterarStatusAtendimentos('FALTOU')}
+        >
           <Text style={styles.buttonText}>Cliente Cancelou</Text>
         </TouchableOpacity>
 
@@ -171,17 +417,105 @@ export default function ClientDetails() {
       {/* BOTÕES FINAIS */}
       <View style={styles.footerButtons}>
 
-        <TouchableOpacity style={styles.editButton}>
+       {/*  <TouchableOpacity style={styles.editButton}>
           <Ionicons name="create-outline" size={20} color="#fff" />
           <Text style={styles.footerButtonText}>Editar</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
-        <TouchableOpacity style={styles.deleteButton}>
-          <Ionicons name="trash-outline" size={20} color="#fff" />
+        <TouchableOpacity 
+          style={styles.deleteButton}
+          onPress={confirmarExclusaoAtendimento}
+        >
+          <Ionicons name="trash-outline" size={50} color="#fff" />
           <Text style={styles.footerButtonText}>Excluir</Text>
         </TouchableOpacity>
 
       </View>
+
+    <Modal
+      visible={modalEditarVisible}
+      animationType="slide"
+      transparent={true}
+    >
+      <View style={styles.modalOverlay}>
+
+        <View style={styles.modalContainer}>
+
+          <Text style={styles.modalTitle}>
+            Editar Atendimento
+          </Text>
+
+          <Text style={styles.inputLabel}>
+            Data do Atendimento
+          </Text>
+
+          <TextInput
+            style={styles.input}
+            value={dataAtendimento}
+            onChangeText={setDataAtendimento}
+            placeholder="Data"
+          />
+
+          <Text style={styles.inputLabel}>
+            Horário Inicial
+          </Text>
+
+          <TextInput
+            style={styles.input}
+            value={horarioInicio}
+            onChangeText={setHorarioInicio}
+            placeholder="Horário Início"
+          />
+
+          <Text style={styles.inputLabel}>
+            Horário Final
+          </Text>
+
+          <TextInput
+            style={styles.input}
+            value={horarioFim}
+            onChangeText={setHorarioFim}
+            placeholder="Horário Fim"
+          />
+
+          <Text style={styles.inputLabel}>
+            Observações
+          </Text>
+
+          <TextInput
+            style={styles.inputObservacao}
+            value={observacao}
+            onChangeText={setObservacao}
+            placeholder="Digite observações..."
+            multiline
+          />
+
+          <View style={styles.modalButtons}>
+
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={() => setModalEditarVisible(false)}
+            >
+              <Text style={styles.modalButtonText}>
+                Cancelar
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.saveButton}
+              onPress={atualizarAtendimento}
+            >
+              <Text style={styles.modalButtonText}>
+                Salvar
+              </Text>
+            </TouchableOpacity>
+
+          </View>
+
+        </View>
+
+      </View>
+    </Modal>
 
     </ScrollView>
   );
@@ -334,5 +668,86 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 16,
   },
+
+  modalOverlay: {
+  flex: 1,
+  backgroundColor: 'rgba(0,0,0,0.5)',
+  justifyContent: 'center',
+  alignItems: 'center',
+},
+
+modalContainer: {
+  width: '90%',
+  backgroundColor: '#fff',
+  borderRadius: 20,
+  padding: 20,
+  elevation: 8,
+},
+
+modalTitle: {
+  fontSize: 22,
+  fontWeight: 'bold',
+  color: '#6a006a',
+  textAlign: 'center',
+  marginBottom: 20,
+},
+
+inputLabel: {
+  fontSize: 14,
+  fontWeight: '600',
+  color: '#555',
+  marginBottom: 5,
+  marginTop: 10,
+},
+
+input: {
+  borderWidth: 1,
+  borderColor: '#ddd',
+  borderRadius: 12,
+  paddingHorizontal: 12,
+  paddingVertical: 10,
+  backgroundColor: '#fafafa',
+},
+
+inputObservacao: {
+  borderWidth: 1,
+  borderColor: '#ddd',
+  borderRadius: 12,
+  paddingHorizontal: 12,
+  paddingVertical: 10,
+  backgroundColor: '#fafafa',
+  height: 90,
+  textAlignVertical: 'top',
+},
+
+modalButtons: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  marginTop: 25,
+},
+
+cancelButton: {
+  flex: 1,
+  backgroundColor: '#9e9e9e',
+  paddingVertical: 14,
+  borderRadius: 12,
+  alignItems: 'center',
+  marginRight: 8,
+},
+
+saveButton: {
+  flex: 1,
+  backgroundColor: '#d81b60',
+  paddingVertical: 14,
+  borderRadius: 12,
+  alignItems: 'center',
+  marginLeft: 8,
+},
+
+modalButtonText: {
+  color: '#fff',
+  fontWeight: 'bold',
+  fontSize: 16,
+},
 
 });

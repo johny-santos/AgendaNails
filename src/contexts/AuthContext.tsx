@@ -1,10 +1,18 @@
 import React, { createContext, useState, useContext, ReactNode } from 'react';
 
+interface User {
+    id: number;
+    nome: string;
+    email: string;
+    token: string;
+}
+
 interface AuthContextType {
   isAuthenticated: boolean;
-  user: { email: string } | null;
-  login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
+  user: User | null;
+
+  login: (userData: User) => Promise<void>;
+  
   logout: () => void;
 }
 
@@ -12,39 +20,24 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState<{ email: string } | null>(null);
+ 
 
-  const login = async (email: string, password: string) => {
-    try {
-      // TODO: Implementar login real com backend
-      if (email && password) {
-        setIsAuthenticated(true);
-        setUser({ email });
-      }
-    } catch (error) {
-      throw error;
-    }
-  };
+const [user, setUser] = useState<User | null>(null);
+  const login = async (userData: User) => {
 
-  const register = async (name: string, email: string, password: string) => {
-    try {
-      // TODO: Implementar registro real com backend
-      if (email && password && name) {
-        setIsAuthenticated(true);
-        setUser({ email });
-      }
-    } catch (error) {
-      throw error;
-    }
+    setIsAuthenticated(true);
+
+    setUser(userData);
+
   };
 
   const logout = () => {
     setIsAuthenticated(false);
     setUser(null);
-  };
+  }; 
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, login, register, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, user, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

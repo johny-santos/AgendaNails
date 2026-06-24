@@ -7,9 +7,11 @@ import ProgressSessions from './ProgressSessions';
 
 interface PackageCardProps {
   name: string;
+  time: string;
   startDate: string;
   service: string;
   price: string;
+  totalPrice: string;
   remainingSessions: number;
   totalSessions: number;
   completedSessions: number;
@@ -23,9 +25,11 @@ type NavigationProps = NativeStackNavigationProp<
 
 export default function PackageCard({
   name,
+  time,
   startDate,
   service,
   price,
+  totalPrice,
   remainingSessions,
   totalSessions,
   completedSessions,
@@ -40,8 +44,14 @@ export default function PackageCard({
       onPress={() =>
         navigation.navigate('PackageDetails', {
           name,
-          time: startDate,
+          time,
+          startDate: startDate,
           service,
+          price,
+          totalPrice,
+          remainingSessions,
+          totalSessions,
+          completedSessions,
           observations,
         })
       }
@@ -68,7 +78,10 @@ export default function PackageCard({
         <View>
           <Text style={styles.price}>{price}</Text>
           <Text style={styles.discount}>Pacote promocional</Text>
+          <Text style={styles.price}>{totalPrice}</Text>
+          <Text style={styles.discount}>Valor bruto</Text>
         </View>
+
 
         <View style={styles.progressArea}>
           <ProgressSessions
